@@ -4,175 +4,457 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>QClaw 投资看板</title>
-<!-- build: 202606121832 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0e17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e17;--card:#111827;--border:#1e2a3a;--text:#e1e5ee;--dim:#6b7a90;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--orange:#f97316}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:12px;max-width:800px;margin:0 auto;-webkit-font-smoothing:antialiased}
-.header{text-align:center;padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px}
-.header h1{font-size:20px;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header .sub{font-size:11px;color:var(--dim);margin-top:2px}
-.header .refresh{font-size:10px;color:var(--dim);margin-top:4px;opacity:0.7}
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+:root{
+  --bg:#0a0e17;--card:#111827;--card2:#151d2e;--border:#1e2a3a;
+  --text:#e1e5ee;--dim:#6b7a90;--dimmer:#3d4a5c;
+  --green:#22c55e;--green20:#22c55e20;--yellow:#eab308;--yellow20:#eab30820;
+  --red:#ef4444;--red20:#ef444420;--blue:#3b82f6;--blue20:#3b82f620;
+  --purple:#8b5cf6;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
+  --radius:10px;
+}
+[data-theme="light"]{
+  --bg:#f0f2f5;--card:#ffffff;--card2:#f8f9fb;--border:#e0e4ea;
+  --text:#1a202c;--dim:#64748b;--dimmer:#cbd5e1;
+  --green20:#22c55e15;--yellow20:#eab30815;--red20:#ef444415;--blue20:#3b82f615;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:10px;max-width:820px;margin:0 auto;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.header h1{font-size:18px;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-right{display:flex;align-items:center;gap:8px}
+.theme-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px;color:var(--text)}
+.header-sub{font-size:10px;color:var(--dim);margin-top:2px;opacity:.7}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;position:relative;overflow:hidden;transition:background .3s}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))}
-.ct{font-size:12px;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.ct{font-size:11px;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+
+/* === 1. 交易信号灯 === */
+.signal-card{text-align:center;padding:20px 14px}
+.signal-light{font-size:64px;line-height:1;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.signal-text{font-size:20px;font-weight:800;margin-top:8px}
+.signal-reason{font-size:12px;color:var(--dim);margin-top:6px;max-width:320px;margin-left:auto;margin-right:auto}
+.signal-green .signal-light,.signal-green .signal-text{color:var(--green)}
+.signal-yellow .signal-light,.signal-yellow .signal-text{color:var(--yellow)}
+.signal-red .signal-light,.signal-red .signal-text{color:var(--red)}
+.signal-green{background:linear-gradient(180deg,var(--green20),transparent)}
+.signal-yellow{background:linear-gradient(180deg,var(--yellow20),transparent)}
+.signal-red{background:linear-gradient(180deg,var(--red20),transparent)}
+
+/* === 2. 再入场进度条 === */
+.reentry-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.reentry-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--card2)}
+.reentry-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px}
+.reentry-dot.pass{background:var(--green);border-color:var(--green)}
+.reentry-dot.fail{background:var(--red);border-color:var(--red)}
+.reentry-dot.warn{background:var(--yellow);border-color:var(--yellow)}
+.reentry-label{font-size:11px;color:#94a3b8;flex:1;line-height:1.2}
+.reentry-status{font-size:10px;font-weight:700;flex-shrink:0}
+.reentry-progress{grid-column:1/-1;text-align:center;margin-top:4px}
+.reentry-bar{display:inline-flex;gap:4px;align-items:center}
+.reentry-pip{width:28px;height:8px;border-radius:4px;background:var(--border)}
+.reentry-pip.pass{background:var(--green)}.reentry-pip.fail{background:var(--red)}.reentry-pip.warn{background:var(--yellow)}
+.reentry-count{font-size:12px;font-weight:700;margin-top:4px}
+
+/* === 3. 估值温度计 === */
+.thermo{display:flex;align-items:center;gap:12px;padding:4px 0}
+.thermo-label{font-size:12px;font-weight:600;width:60px;flex-shrink:0}
+.thermo-bar{flex:1;height:14px;border-radius:7px;background:linear-gradient(90deg,#3b82f6 0%,#22c55e 30%,#eab308 60%,#f97316 80%,#ef4444 100%);position:relative;overflow:hidden}
+.thermo-fill{position:absolute;top:0;bottom:0;right:0;background:var(--card2);opacity:.7;border-radius:0 7px 7px 0}
+.thermo-pct{font-size:14px;font-weight:800;width:44px;text-align:right;flex-shrink:0}
+.thermo-status{font-size:10px;font-weight:600;padding:1px 6px;border-radius:3px;flex-shrink:0;white-space:nowrap}
+.thermo-hot{animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* === 4. 冷却期倒计时 === */
+.cool-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cool-item{padding:8px;border-radius:6px;background:var(--card2);text-align:center}
+.cool-sector{font-size:10px;color:var(--dim)}
+.cool-name{font-size:12px;font-weight:600;margin:2px 0}
+.cool-countdown{font-size:18px;font-weight:800}
+.cool-date{font-size:9px;color:var(--dim);margin-top:1px}
+.cool-frozen{color:var(--red)}.cool-thawing{color:var(--orange)}.cool-free{color:var(--green)}
+.cool-thaw-today{animation:glow 1.5s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 var(--green20)}50%{box-shadow:0 0 12px 4px var(--green20)}}
+
+/* === 5. 现金火力条 === */
+.cash-main{text-align:center;padding:8px 0}
+.cash-total{font-size:36px;font-weight:800;color:var(--blue)}
+.cash-label{font-size:11px;color:var(--dim);margin-top:2px}
+.cash-bars{margin-top:12px}
+.cash-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.cash-row-label{font-size:11px;color:#94a3b8;width:56px;flex-shrink:0}
+.cash-row-bar{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.cash-row-fill{height:100%;border-radius:5px;transition:width .5s}
+.cash-row-val{font-size:12px;font-weight:700;width:56px;text-align:right;flex-shrink:0}
+
+/* === 6. 赛道状态卡片 === */
+.sector-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sector-box{padding:6px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:transform .15s;border:1px solid transparent;position:relative}
+.sector-box:active{transform:scale(.95)}
+.sector-box.free{background:var(--green20);border-color:var(--green40)}
+.sector-box.frozen{background:var(--red20);border-color:var(--red40)}
+.sector-box.valblock{background:var(--yellow20);border-color:var(--yellow40)}
+.sector-box.nodata{background:var(--card2);border-color:var(--border)}
+.sector-id{font-size:11px;font-weight:700}
+.sector-name{font-size:8px;color:var(--dim);margin-top:1px;line-height:1.1}
+.sector-tip{display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;white-space:nowrap;z-index:10;color:var(--text)}
+.sector-box:hover .sector-tip,.sector-box:active .sector-tip{display:block}
+
+/* === 7. 今日快讯 === */
+.news-scroll{overflow:hidden;height:72px;position:relative}
+.news-track{animation:scroll-up 12s linear infinite}
+.news-track:hover{animation-play-state:paused}
+@keyframes scroll-up{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.news-item{padding:6px 0;border-bottom:1px solid #ffffff06;font-size:12px;line-height:1.4;display:flex;gap:6px;align-items:flex-start}
+.news-tag{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.news-tag.geo{background:var(--orange20);color:var(--orange)}
+.news-tag.policy{background:var(--purple20);color:var(--purple)}
+.news-tag.market{background:var(--blue20);color:var(--blue)}
+.news-tag.global{background:var(--cyan20);color:var(--cyan)}
+
+/* === 8. 关键日期倒计时 === */
+.date-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #ffffff06}
+.date-item:last-child{border:none}
+.date-emoji{font-size:18px;flex-shrink:0}
+.date-info{flex:1}
+.date-event{font-size:12px;font-weight:600}
+.date-when{font-size:10px;color:var(--dim)}
+.date-cd{font-size:16px;font-weight:800;flex-shrink:0;text-align:center;min-width:48px}
+.date-cd.urgent{color:var(--red);animation:blink 1.2s infinite}
+.date-cd.soon{color:var(--orange)}
+.date-cd.later{color:var(--blue)}
+
+/* === 9. 持仓历史 === */
+.nav-chart{width:100%;height:140px}
+
+/* === 10. 深浅色切换（见上方CSS变量+JS）=== */
+
+/* === 11. PWA（manifest.json+SW）=== */
+
+/* === 12. 推送通知 === */
+.notify-btn{display:block;margin:8px auto 0;font-size:11px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer}
+
+/* === 13. 资金热力图 === */
+.heatmap{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.heat-cell{padding:8px 6px;border-radius:6px;text-align:center}
+.heat-name{font-size:11px;font-weight:600}
+.heat-flow{font-size:16px;font-weight:800;margin:2px 0}
+.heat-bar-mini{height:3px;border-radius:2px;margin-top:3px}
+
+/* 通用 */
 .score-center{text-align:center;padding:6px 0}
-.score-num{font-size:56px;font-weight:800;line-height:1}
+.score-num{font-size:52px;font-weight:800;line-height:1}
 .score-of{font-size:14px;color:var(--dim)}
-.score-eff{font-size:13px;color:#94a3b8;margin-top:4px}
-.score-bar{display:flex;justify-content:center;gap:3px;margin-top:10px}
-.sb{width:24px;height:7px;border-radius:4px;background:var(--border)}
+.score-eff{font-size:12px;color:#94a3b8;margin-top:4px}
+.score-bar{display:flex;justify-content:center;gap:3px;margin-top:8px}
+.sb{width:22px;height:6px;border-radius:3px;background:var(--border)}
 .sb.g{background:var(--green)}.sb.y{background:var(--yellow)}.sb.r{background:var(--red)}
-.score-act{margin-top:8px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;display:inline-block}
-.act-g{background:#22c55e20;color:var(--green)}.act-y{background:#eab30820;color:var(--yellow)}.act-r{background:#ef444420;color:var(--red)}
-.dr{display:flex;align-items:center;padding:5px 0;border-bottom:1px solid #ffffff06}
+.dr{display:flex;align-items:center;padding:4px 0;border-bottom:1px solid #ffffff06}
 .dr:last-child{border:none}
-.dn{font-size:12px;color:#94a3b8;width:60px;flex-shrink:0}
-.db{flex:1;height:5px;background:var(--border);border-radius:3px;margin:0 8px;overflow:hidden}
-.df{height:100%;border-radius:3px}
-.dv{font-size:12px;font-weight:700;width:32px;text-align:right;flex-shrink:0}
-.chart-svg{width:100%;height:160px}
-.cr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px}
-.ci{font-size:14px;width:20px;text-align:center;flex-shrink:0}
-.cx{flex:1;color:#94a3b8}
-.cs{font-size:11px;font-weight:600;padding:1px 6px;border-radius:3px;flex-shrink:0}
-.p{background:#22c55e20;color:var(--green)}.f{background:#ef444420;color:var(--red)}.w{background:#eab30820;color:var(--yellow)}
-.vr{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff06}
-.vr:last-child{border:none}
-.vs{font-size:12px;font-weight:600;width:52px}
-.vp{font-size:13px;font-weight:700;width:44px}
-.vb{flex:1;height:6px;background:var(--border);border-radius:3px;margin:0 8px;overflow:hidden}
-.vf{height:100%;border-radius:3px}
-.vst{font-size:11px;font-weight:600;padding:1px 6px;border-radius:3px}
-.cash{text-align:center;padding:8px 0}
-.cash-n{font-size:32px;font-weight:800;color:var(--blue)}
-.cash-l{font-size:11px;color:var(--dim);margin-top:2px}
-.cash-row{display:flex;justify-content:center;gap:16px;margin-top:10px}
-.cash-item{text-align:center}
-.cash-v{font-size:16px;font-weight:700}
-.cash-il{font-size:10px;color:var(--dim);margin-top:1px}
-.cl{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid #ffffff06}
-.cl:last-child{border:none}
-.cl-s{color:#94a3b8;flex:1}
-.cl-d{font-weight:600;flex-shrink:0;margin-left:8px}
-.cl-ok{color:var(--green)}.cl-w{color:var(--orange)}
+.dn{font-size:11px;color:#94a3b8;width:56px;flex-shrink:0}
+.db{flex:1;height:4px;background:var(--border);border-radius:2px;margin:0 6px;overflow:hidden}
+.df{height:100%;border-radius:2px;transition:width .5s}
+.dv{font-size:11px;font-weight:700;width:28px;text-align:right;flex-shrink:0}
+.chart-svg{width:100%;height:140px}
 .tr{display:flex;gap:6px;padding:4px 0;font-size:11px;align-items:center;border-bottom:1px solid #ffffff06}
 .tr:last-child{border:none}
 .tr-a{font-weight:600;min-width:28px}
 .tr-sell{color:var(--red)}.tr-buy{color:var(--green)}
 .tr-f{color:var(--text);flex:1}
-.tr-m{color:#94a3b8;min-width:48px;text-align:right}
-.tr-pl{min-width:48px;text-align:right;font-weight:600}
-.dt{display:flex;gap:8px;padding:3px 0;font-size:12px;border-bottom:1px solid #ffffff06}
-.dt:last-child{border:none}
-.dt-d{color:var(--blue);font-weight:700;min-width:44px}
-.dt-e{color:#94a3b8}
+.tr-m{color:#94a3b8;min-width:44px;text-align:right}
+.tr-pl{min-width:44px;text-align:right;font-weight:600}
 .loading{text-align:center;padding:60px 0;color:var(--dim);font-size:14px}
-.error-card{background:#ef444415;border-color:#ef444440}
+.error-card{background:var(--red20);border-color:#ef444440}
+[data-theme="light"] .cool-item,.reentry-item{background:var(--card2)}
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>📊 QClaw 投资看板</h1>
-  <div class="sub" id="ut">加载中...</div>
-  <div class="refresh" id="rf"></div>
+  <div>
+    <h1>📊 QClaw 投资看板</h1>
+    <div class="header-sub" id="ut">加载中...</div>
+  </div>
+  <div class="header-right">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  </div>
 </div>
 
 <div id="app"><div class="loading">⏳ 正在加载数据...</div></div>
 
 <script>
-// Data URL - auto-refreshes from GitHub repo
-const DATA_URL = './data.json';
-const STATE_URL = './state.json';
-const HISTORY_URL = './history.json';
-const REFRESH_MIN = 5;
+const DATA_URL='./data.json',STATE_URL='./state.json',HISTORY_URL='./history.json',NEWS_URL='./news.json';
+const REFRESH_MIN=5;
 
 function $(s,p){return(p||document).querySelector(s)}
 function $$(s,p){return[...(p||document).querySelectorAll(s)]}
 
-// Fetch with cache-bust
-async function fetchData(url) {
-  const sep = url.includes('?') ? '&' : '?';
-  const r = await fetch(url + sep + '_t=' + Date.now());
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+async function fetchData(url){const sep=url.includes('?')?'&':'?';const r=await fetch(url+sep+'_t='+Date.now());if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+
+// Theme
+function toggleTheme(){
+  const t=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t==='dark'?'':'light');
+  $('#themeBtn').textContent=t==='light'?'☀️':'🌙';
+  localStorage.setItem('qclaw-theme',t);
+}
+(function(){const s=localStorage.getItem('qclaw-theme');if(s==='light'){document.documentElement.setAttribute('data-theme','light');$('#themeBtn').textContent='☀️'}})();
+
+// Push Notification
+async function requestNotify(){
+  if(!('Notification' in window))return alert('浏览器不支持通知');
+  const p=await Notification.requestPermission();
+  if(p==='granted')new Notification('QClaw看板',{body:'推送通知已开启 ✅',icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"><text y="32" font-size="32">📊</text></svg>'});
 }
 
-// Parse state.md text into structured data
-function parseState(t) {
-  const d = {cash:0,total:0,safety:9000,avail:0,cooling:[],reentry:[],val:[],trades:[],dates:[]};
-  const m = t.match(/现金[：:]\s*~?(\d+)/); if(m) d.cash = +m[1];
-  const m2 = t.match(/总资产[：:]\s*~?(\d+)/); if(m2) d.total = +m2[1];
-  const m3 = t.match(/可动用[：:]\s*~?(\d+)/); if(m3) d.avail = +m3[1];
-  const m4 = t.match(/安全线[：:]\s*(\d+)/); if(m4) d.safety = +m4[1];
+function parseState(t){
+  const d={cash:0,total:0,safety:9000,avail:0,locked:1000,cooling:[],reentry:[],val:[],trades:[],dates:[],news:[],sectors:[],navHistory:[]};
+  const m=t.match(/现金[：:]\s*~?(\d+)/);if(m)d.cash=+m[1];
+  const m2=t.match(/总资产[：:]\s*~?(\d+)/);if(m2)d.total=+m2[1];
+  const m3=t.match(/可动用[：:]\s*~?(\d+)/);if(m3)d.avail=+m3[1];
+  const m4=t.match(/安全线[：:]\s*(\d+)/);if(m4)d.safety=+m4[1];
+  d.locked=d.cash-d.avail;
 
-  const re = t.match(/## 再入场条件[\s\S]*?(?=\n---|\n##|$)/);
+  const re=t.match(/## 再入场条件[\s\S]*?(?=\n---|\n##|$)/);
   if(re){const rows=[...re[0].matchAll(/\|\s*(\d+)\s*\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){if(!r[2].includes('条件')){let s='f';if(r[3].includes('✅'))s='p';else if(r[3].includes('🟡'))s='w';
     d.reentry.push({n:r[1],c:r[2].trim(),s,raw:r[3].trim()})}}}
 
-  const vl = t.match(/## 估值水位[\s\S]*?(?=\n---|\n##|$)/);
+  const vl=t.match(/## 估值水位[\s\S]*?(?=\n---|\n##|$)/);
   if(vl){const rows=[...vl[0].matchAll(/\|\s*([^|\n]+)\|\s*([^|\n]+)\|\s*([^|\n]+)\|/g)];
     for(const r of rows){if(!r[1].includes('板块'))d.val.push({s:r[1].trim(),p:r[2].trim(),st:r[3].trim()})}}
 
-  const cl = t.match(/## 🚫 冷却期[\s\S]*?(?=\n---|\n##|$)/);
+  const cl=t.match(/## 🚫 冷却期[\s\S]*?(?=\n---|\n##|$)/);
   if(cl){const rows=[...cl[0].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){const f=r[1].trim();if(f&&!f.startsWith('基金'))
     d.cooling.push({f,c:r[2].trim(),sec:r[3].trim(),sd:r[4].trim(),tp:r[5].trim(),td:r[6].trim()})}}
 
-  const tr = t.match(/## 操作记录[\s\S]*?(?=\n---|\n##|$)/);
+  const tr=t.match(/## 操作记录[\s\S]*?(?=\n---|\n##|$)/);
   if(tr){const rows=[...tr[0].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){const dt=r[1].trim();if(dt&&!dt.startsWith('日期'))
     d.trades.push({dt,a:r[2].trim(),f:r[3].trim(),c:r[4].trim(),m:r[5].trim(),pl:r[6].trim()})}}
 
-  const kd = t.match(/## 关键日期([\s\S]*?)$/);
+  const kd=t.match(/## 关键日期([\s\S]*?)$/);
   if(kd){const rows=[...kd[1].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){const dd=r[1].trim();if(dd&&!dd.startsWith('日期'))d.dates.push({d:dd,e:r[2].trim()})}}
+
+  // Parse sectors from cooling section
+  const secLine=t.match(/\*\*可操作赛道[：:]\*\* (.+)/);
+  const frozenLine=t.match(/\*\*冻结赛道[：:]\*\* (.+)/);
+  const sectorDefs=[
+    {id:'S1',name:'半导体设备',emoji:'🔧'},{id:'S2',name:'CPO/光通信',emoji:'📡'},
+    {id:'S3',name:'AI算力租赁',emoji:'☁️'},{id:'S4',name:'电力/电网',emoji:'⚡'},
+    {id:'S5',name:'人形机器人',emoji:'🤖'},{id:'S6',name:'科技制造',emoji:'🏭'},
+    {id:'S7',name:'锂矿/有色',emoji:'⛏️'},{id:'S8',name:'化工',emoji:'🧪'},
+    {id:'S9',name:'商业航天',emoji:'🚀'},{id:'S10',name:'其他',emoji:'📦'}
+  ];
+  d.sectors=sectorDefs.map(s=>{
+    let status='free',thawDate=null,reason='';
+    if(frozenLine&&frozenLine[1].includes(s.id)){status='frozen';reason='冷却中'}
+    // Check valuation block
+    if(s.id==='S1'&&d.val.find(v=>v.s.includes('半导体'))){const vp=d.val.find(v=>v.s.includes('半导体'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
+    if(s.id==='S2'&&d.val.find(v=>v.s.includes('CPO'))){const vp=d.val.find(v=>v.s.includes('CPO'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
+    // Find thaw date
+    const coolItem=d.cooling.find(c=>c.sec&&c.sec.includes(s.id));
+    if(coolItem&&coolItem.td&&coolItem.td!=='—')thawDate=coolItem.td;
+    return{...s,status,thawDate,reason}
+  });
+
+  // Parse nav history from trades
+  let runningTotal=1200; // starting amount
+  d.navHistory=[{date:'6/5',value:1200}];
+  for(const tr of d.trades){
+    const amt=parseFloat((tr.m||'0').replace(/[^0-9.-]/g,''))||0;
+    const pl=parseFloat((tr.pl||'0').replace(/[^0-9.+]/g,''))||0;
+    if(tr.a.includes('卖出'))runningTotal+=amt;
+    else runningTotal-=amt;
+    d.navHistory.push({date:tr.dt,value:Math.round(runningTotal)});
+  }
 
   return d;
 }
 
 function scColor(v){return v>=6?'var(--green)':v>=4?'var(--yellow)':'var(--red)'}
+function pctColor(p){return p>90?'var(--red)':p>80?'var(--orange)':p>60?'var(--yellow)':'var(--green)'}
 
-function buildHTML(C, H, SD) {
-  const sc = C.score || 0, ef = C.effective_score || 0;
-  let html = '';
+function daysUntil(dateStr){
+  if(!dateStr||dateStr==='—')return null;
+  const m=dateStr.match(/(\d+)\/(\d+)/);
+  if(!m)return null;
+  const target=new Date(2026,+m[1]-1,+m[2]);
+  const now=new Date();
+  now.setHours(0,0,0,0);
+  return Math.ceil((target-now)/(86400000));
+}
 
-  // Score Card
-  html += `<div class="card"><div class="ct">🎯 主线健康度</div>
+function formatCountdown(days){
+  if(days===null)return'—';
+  if(days<=0)return'已解冻✅';
+  if(days===1)return'明天🔓';
+  return days+'天';
+}
+
+function buildHTML(C,H,SD,newsData){
+  const sc=C.score||0,ef=C.effective_score||0;
+  let html='';
+
+  // === 1. 交易信号灯 ===
+  const passCount=SD?SD.reentry.filter(r=>r.s==='p').length:0;
+  const totalRe=SD?SD.reentry.length:6;
+  const signalCls=sc>=6&&passCount>=4?'green':sc>=4||passCount>=3?'yellow':'red';
+  const signalIcon=signalCls==='green'?'🟢':signalCls==='yellow'?'🟡':'🔴';
+  const signalText=signalCls==='green'?'可以买入':signalCls==='yellow'?'继续观望':'禁止入场';
+  const signalReason=signalCls==='red'?
+    (passCount+'/'+totalRe+'项条件满足，估值>90%⛔'):
+    signalCls==='yellow'?
+    ('评分'+ef.toFixed(1)+'/10，'+passCount+'/'+totalRe+'项满足'):
+    '评分'+ef.toFixed(1)+'≥6，'+passCount+'/'+totalRe+'项全部满足✅';
+  html+=`<div class="card signal-card signal-${signalCls}">
+    <div class="signal-light">${signalIcon}</div>
+    <div class="signal-text">${signalText}</div>
+    <div class="signal-reason">${signalReason}</div>
+  </div>`;
+
+  // === 2. 再入场条件进度条 ===
+  if(SD&&SD.reentry.length>0){
+    html+=`<div class="card"><div class="ct">🚦 再入场条件</div><div class="reentry-grid">`;
+    for(const r of SD.reentry){
+      const dotCls=r.s==='p'?'pass':r.s==='w'?'warn':'fail';
+      const icon=r.s==='p'?'✓':r.s==='w'?'!':'✗';
+      const stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
+      html+=`<div class="reentry-item"><div class="reentry-dot ${dotCls}">${icon}</div><div class="reentry-label">${r.c}</div><div class="reentry-status" style="color:${r.s==='p'?'var(--green)':r.s==='w'?'var(--yellow)':'var(--red)'}">${stxt.slice(0,12)}</div></div>`;
+    }
+    html+=`<div class="reentry-progress"><div class="reentry-bar">`;
+    for(const r of SD.reentry)html+=`<div class="reentry-pip ${r.s==='p'?'pass':r.s==='w'?'warn':'fail'}"></div>`;
+    html+=`</div><div class="reentry-count" style="color:${passCount>=4?'var(--green)':passCount>=3?'var(--yellow)':'var(--red)'}"> ${passCount} / ${totalRe} 满足</div></div>`;
+    html+=`</div></div>`;
+  }
+
+  // === Score Card ===
+  html+=`<div class="card"><div class="ct">🎯 主线健康度</div>
 <div class="score-center">
 <div class="score-num" style="color:${scColor(sc)}">${sc.toFixed(1)}</div>
 <div class="score-of">/10</div>
 <div class="score-eff">有效评分 ${ef.toFixed(2)}（2天均值）</div>
 <div class="score-bar">`;
   for(let i=0;i<10;i++){const c=i<sc?(sc>=6?'g':sc>=4?'y':'r'):'';html+=`<div class="sb ${c}"></div>`;}
-  html += `</div><div class="score-act ${sc>=6?'act-g':sc>=4?'act-y':'act-r'}">${sc>=6?'🟢 可入场':sc>=4?'🟡 震荡观察':'🔴 减仓/清仓'}</div></div></div>`;
+  html+=`</div></div></div>`;
 
   // Dimensions
-  const dims = C.dimensions || {};
-  const dimOrder = ['资金流向','龙头位置','政策催化','板块趋势','成交量'];
-  html += `<div class="card"><div class="ct">📐 评分维度</div>`;
+  const dims=C.dimensions||{};
+  const dimOrder=['资金流向','龙头位置','政策催化','板块趋势','成交量'];
+  html+=`<div class="card"><div class="ct">📐 评分维度</div>`;
   for(const name of dimOrder){
     const d=dims[name];const v=d?d.score:0;const mx=d?d.max:2;const pct=Math.round(v/mx*100);
     const cl=v/mx>=0.6?'var(--green)':v/mx>=0.3?'var(--yellow)':'var(--red)';
     html+=`<div class="dr"><div class="dn">${name}</div><div class="db"><div class="df" style="width:${pct}%;background:${cl}"></div></div><div class="dv" style="color:${cl}">${v}/${mx}</div></div>`;
   }
-  html += `</div>`;
+  html+=`</div>`;
+
+  // === 3. 估值温度计 ===
+  if(SD&&SD.val&&SD.val.length>0){
+    html+=`<div class="card"><div class="ct">🌡️ 估值温度计</div>`;
+    for(const v of SD.val){
+      const pn=parseInt(v.p.replace(/[^0-9]/g,''))||0;
+      const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
+      const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'⛔禁止':pn>80?'⚠️不加仓':'✅可买');
+      const hot=pn>90?' thermo-hot':'';
+      html+=`<div class="thermo"><div class="thermo-label">${v.s}</div><div class="thermo-bar"><div class="thermo-fill" style="width:${100-Math.min(pn,100)}%"></div></div><div class="thermo-pct${hot}" style="color:${cl}">${v.p}</div><div class="thermo-status" style="background:${pn>90?'var(--red20)':pn>80?'var(--yellow20)':'var(--green20)'};color:${cl}">${stx}</div></div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // === 13. 资金热力图 ===
+  if(C.sector_data){
+    const sectors=[
+      {name:'半导体',data:C.sector_data['半导体'],emoji:'🔧'},
+      {name:'CPO通信',data:C.sector_data['CPO通信'],emoji:'📡'}
+    ];
+    // Add overseas
+    if(C.overseas){
+      sectors.push({name:'纳斯达克',data:{涨跌幅:C.overseas['纳斯达克']?.涨跌幅},emoji:'🇺🇸'});
+      sectors.push({name:'费城半导体',data:{涨跌幅:C.overseas['费城半导体']?.涨跌幅},emoji:'📈'});
+    }
+    if(C.overseas&&C.overseas['上证指数']){
+      sectors.push({name:'上证指数',data:{涨跌幅:C.overseas['上证指数']?.涨跌幅},emoji:'🇨🇳'});
+    }
+    if(sectors.length>0){
+      html+=`<div class="card"><div class="ct">🔥 板块资金热力图</div><div class="heatmap">`;
+      for(const s of sectors){
+        const chg=s.data?.涨跌幅;
+        if(chg===null||chg===undefined)continue;
+        const n=+chg;
+        const bg=n>3?'#22c55e30':n>0?'#22c55e15':n>-3?'#ef444415':'#ef444430';
+        const clr=n>=0?'var(--green)':'var(--red)';
+        const flow=s.data?.主力净流入;
+        const flowStr=flow!==undefined?(flow>=0?'+':'')+flow.toFixed(1)+'亿':'';
+        html+=`<div class="heat-cell" style="background:${bg}"><div class="heat-name">${s.emoji} ${s.name}</div><div class="heat-flow" style="color:${clr}">${n>=0?'+':''}${n.toFixed(2)}%</div>${flowStr?`<div style="font-size:10px;color:var(--dim)">${flowStr}</div>`:''}<div class="heat-bar-mini" style="background:${clr};width:${Math.min(Math.abs(n)*10,100)}%"></div></div>`;
+      }
+      html+=`</div></div>`;
+    }
+  }
+
+  // === 6. 赛道状态卡片 ===
+  if(SD&&SD.sectors){
+    html+=`<div class="card"><div class="ct">🏭 赛道状态 (S1-S10)</div><div class="sector-grid">`;
+    for(const s of SD.sectors){
+      const cls=s.status==='free'?'free':s.status==='frozen'?'frozen':s.status==='valblock'?'valblock':'nodata';
+      const statusText=s.status==='free'?'✅可操作':s.status==='frozen'?'🔒冷却中':s.status==='valblock'?'⛔估值锁':'—';
+      html+=`<div class="sector-box ${cls}"><div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div></div>`;
+    }
+    html+=`</div></div>`;
+  }
+
+  // === 5. 现金火力条 ===
+  if(SD){
+    const total=SD.total||SD.cash;
+    const avail=SD.avail;
+    const locked=SD.locked||SD.cash-SD.avail;
+    const safety=SD.safety;
+    const aboveSafety=(total-safety)/total*100;
+    html+=`<div class="card"><div class="ct">💰 现金火力</div>
+<div class="cash-main"><div class="cash-total">${total.toLocaleString()}</div><div class="cash-label">总资产（元）</div></div>
+<div class="cash-bars">
+<div class="cash-row"><div class="cash-row-label">可动用</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${(avail/total*100).toFixed(0)}%;background:var(--blue)"></div></div><div class="cash-row-val" style="color:var(--blue)">${avail.toLocaleString()}</div></div>
+<div class="cash-row"><div class="cash-row-label">锁定</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${(locked/total*100).toFixed(0)}%;background:var(--dim)"></div></div><div class="cash-row-val" style="color:var(--dim)">${locked.toLocaleString()}</div></div>
+<div class="cash-row"><div class="cash-row-label">安全线</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${aboveSafety.toFixed(0)}%;background:var(--green)"></div></div><div class="cash-row-val" style="color:var(--green)">${safety.toLocaleString()}</div></div>
+</div></div>`;
+  }
+
+  // === 4. 冷却期倒计时 ===
+  if(SD&&SD.cooling){
+    const activeCool=SD.cooling.filter(c=>c.td&&c.td!=='—');
+    if(activeCool.length>0){
+      html+=`<div class="card"><div class="ct">⏰ 冷却期倒计时</div><div class="cool-grid">`;
+      for(const c of activeCool){
+        const days=daysUntil(c.td);
+        const cdText=formatCountdown(days);
+        const cls=days===null?'cool-free':days<=0?'cool-free cool-thaw-today':days<=3?'cool-thawing':days<=7?'cool-thawing':'cool-frozen';
+        html+=`<div class="cool-item"><div class="cool-sector">${c.sec}</div><div class="cool-name">${c.c}</div><div class="cool-countdown ${cls}">${cdText}</div><div class="cool-date">解冻 ${c.td}</div></div>`;
+      }
+      html+=`</div></div>`;
+    }
+  }
 
   // Score Chart
-  if(H && H.length > 0) {
-    const dailyMap = {};
+  if(H&&H.length>0){
+    const dailyMap={};
     for(const h of H){if(!dailyMap[h.date]||h.time>=(dailyMap[h.date].time||''))dailyMap[h.date]=h;}
-    const entries = Object.entries(dailyMap).sort((a,b)=>a[0].localeCompare(b[0]));
-    if(entries.length > 0) {
+    const entries=Object.entries(dailyMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    if(entries.length>0){
       const labels=entries.map(e=>e[0].slice(5));
       const scores=entries.map(e=>e[1].score);
       const effs=entries.map(e=>e[1].effective_score||e[1].score);
       const W=320,H2=130,P=30,PB=20;
-      const xScale=(i)=>P+i*(W-2*P)/(labels.length-1||1);
-      const yScale=(v)=>H2-PB-v/10*(H2-P-PB);
-      function makeLine(data,color){let pts=data.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;}
-      function makeDots(data,color){return data.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="${color}"/>`).join('');}
+      const xScale=i=>P+i*(W-2*P)/(labels.length-1||1);
+      const yScale=v=>H2-PB-v/10*(H2-P-PB);
+      function makeLine(data,color){return`<polyline points="${data.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`}
+      function makeDots(data,color){return data.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="${color}"/>`).join('')}
       const y5=yScale(5),y3=yScale(3);
       html+=`<div class="card"><div class="ct">📈 评分趋势</div>
       <svg viewBox="0 0 ${W} ${H2}" class="chart-svg" preserveAspectRatio="xMidYMid meet">
@@ -188,110 +470,100 @@ function buildHTML(C, H, SD) {
     }
   }
 
-  // Re-entry
-  if(SD && SD.reentry && SD.reentry.length > 0) {
-    html += `<div class="card"><div class="ct">🚦 再入场条件</div>`;
-    for(const r of SD.reentry){
-      const icon=r.s==='p'?'✅':r.s==='w'?'🟡':'❌';
-      const cls=r.s==='p'?'p':r.s==='w'?'w':'f';
-      const stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
-      html+=`<div class="cr"><div class="ci">${icon}</div><div class="cx">${r.c}</div><div class="cs ${cls}">${stxt}</div></div>`;
-    }
-    html += `</div>`;
+  // === 9. 持仓历史净值图 ===
+  if(SD&&SD.navHistory&&SD.navHistory.length>1){
+    const W=320,H2=120,P=30,PB=20;
+    const vals=SD.navHistory.map(n=>n.value);
+    const mn=Math.min(...vals)*0.9,mx=Math.max(...vals)*1.1;
+    const xScale=i=>P+i*(W-2*P)/(vals.length-1);
+    const yScale=v=>H2-PB-(v-mn)/(mx-mn)*(H2-P-PB);
+    const pts=vals.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');
+    html+=`<div class="card"><div class="ct">📉 账户净值走势</div>
+    <svg viewBox="0 0 ${W} ${H2}" class="nav-chart" preserveAspectRatio="xMidYMid meet">
+    <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>
+    ${vals.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="var(--blue)"/>`).join('')}
+    ${SD.navHistory.map((n,i)=>`<text x="${xScale(i)}" y="${H2-4}" fill="#6b7a90" font-size="7" text-anchor="middle">${n.date}</text>`).join('')}
+    ${vals.map((v,i)=>`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`).join('')}
+    </svg></div>`;
   }
 
-  // Valuation
-  if(SD && SD.val && SD.val.length > 0) {
-    html += `<div class="card"><div class="ct">📐 估值水位</div>`;
-    for(const v of SD.val){
-      const pn=parseInt(v.p.replace(/[^0-9]/g,''))||0;
-      const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
-      const cls=pn>90?'f':pn>80?'w':'p';
-      const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'禁止买入':pn>80?'不加仓':'可买');
-      html+=`<div class="vr"><div class="vs" style="color:var(--text)">${v.s}</div><div class="vp" style="color:${cl}">${v.p}</div><div class="vb"><div class="vf" style="width:${Math.min(pn,100)}%;background:${cl}"></div></div><div class="vst ${cls}">${stx}</div></div>`;
-    }
-    html += `</div>`;
+  // === 7. 今日快讯 ===
+  const newsItems=newsData&&newsData.length>0?newsData:[
+    {tag:'market',tagText:'市场',text:'6/16 FOMC会议，鹰派概率80%'},
+    {tag:'geo',tagText:'地缘',text:'伊朗和解方案可能本周末签字'},
+    {tag:'global',tagText:'海外',text:'费城半导体+8%，美伊缓和+PPI利好'}
+  ];
+  html+=`<div class="card"><div class="ct">📰 今日快讯</div><div class="news-scroll"><div class="news-track">`;
+  const doubled=[...newsItems,...newsItems];
+  for(const n of doubled){
+    html+=`<div class="news-item"><div class="news-tag ${n.tag}">${n.tagText}</div><div>${n.text}</div></div>`;
   }
+  html+=`</div></div></div>`;
 
-  // Cash
-  if(SD) {
-    html += `<div class="card"><div class="ct">💰 账户概览</div>
-<div class="cash"><div class="cash-n">${SD.total.toLocaleString()}</div><div class="cash-l">总资产（元）</div>
-<div class="cash-row">
-<div class="cash-item"><div class="cash-v">${SD.cash.toLocaleString()}</div><div class="cash-il">现金</div></div>
-<div class="cash-item"><div class="cash-v">${SD.avail.toLocaleString()}</div><div class="cash-il">可动用</div></div>
-<div class="cash-item"><div class="cash-v" style="color:var(--green)">${SD.safety.toLocaleString()}</div><div class="cash-il">安全线</div></div>
-</div></div></div>`;
-  }
-
-  // Cooling
-  if(SD && SD.cooling) {
-    html += `<div class="card"><div class="ct">🚫 冷却期</div>`;
-    let coolHTML = '';
-    for(const c of SD.cooling){
-      if(!c.td||c.td==='—')continue;
-      coolHTML+=`<div class="cl"><div class="cl-s">${c.c} ${c.f}</div><div class="cl-d cl-w">${c.td}</div></div>`;
+  // === 8. 关键日期倒计时 ===
+  if(SD&&SD.dates&&SD.dates.length>0){
+    html+=`<div class="card"><div class="ct">📅 关键日期</div>`;
+    const emojis={'FOMC':'🏛️','英伟达':'🤖','华为':'📱','冷却':'🔓','达沃斯':'🌍','原油':'🛢️','深证':'📊','样本':'📊'};
+    for(const d of SD.dates){
+      const days=daysUntil(d.d);
+      const cdText=days===null?'—':days<=0?'今日!':days+'天';
+      const cdCls=days!==null&&days<=1?'urgent':days!==null&&days<=5?'soon':'later';
+      const emoji=Object.entries(emojis).find(([k])=>d.e.includes(k))?.[1]||'📌';
+      html+=`<div class="date-item"><div class="date-emoji">${emoji}</div><div class="date-info"><div class="date-event">${d.e}</div><div class="date-when">${d.d}</div></div><div class="date-cd ${cdCls}">${cdText}</div></div>`;
     }
-    html += coolHTML || '<div style="color:var(--dim);text-align:center;padding:12px;font-size:12px">无冷却期</div>';
-    html += `</div>`;
+    html+=`</div>`;
   }
 
   // Trades
-  if(SD && SD.trades && SD.trades.length > 0) {
-    html += `<div class="card"><div class="ct">📋 近期操作</div>`;
+  if(SD&&SD.trades&&SD.trades.length>0){
+    html+=`<div class="card"><div class="ct">📋 近期操作</div>`;
     for(const t of SD.trades){
       const isBuy=t.a.includes('买');
       const plcls=t.pl.includes('+')?'var(--green)':t.pl.includes('-')?'var(--red)':'var(--dim)';
       html+=`<div class="tr"><div class="tr-a ${isBuy?'tr-buy':'tr-sell'}">${isBuy?'买入':'卖出'}</div><div class="tr-f">${t.f}</div><div class="tr-m">${t.m}</div><div class="tr-pl" style="color:${plcls}">${t.pl}</div></div>`;
     }
-    html += `</div>`;
+    html+=`</div>`;
   }
 
-  // Key Dates
-  if(SD && SD.dates && SD.dates.length > 0) {
-    html += `<div class="card"><div class="ct">📅 关键日期</div>`;
-    for(const d of SD.dates){
-      html+=`<div class="dt"><div class="dt-d">${d.d}</div><div class="dt-e">${d.e}</div></div>`;
-    }
-    html += `</div>`;
-  }
+  // === 12. 推送通知 ===
+  html+=`<div class="card"><div class="ct">🔔 通知设置</div><button class="notify-btn" onclick="requestNotify()">开启评分变化推送通知</button><div style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">评分突变/冷却期解冻时自动提醒</div></div>`;
 
   return html;
 }
 
-// Main
-async function main() {
-  try {
-    const [C, H, stateRaw] = await Promise.all([
+async function main(){
+  try{
+    const[C,H,stateRaw,newsData]=await Promise.all([
       fetchData(DATA_URL),
       fetchData(HISTORY_URL).catch(()=>[]),
-      fetchData(STATE_URL).catch(()=>null)
+      fetchData(STATE_URL).catch(()=>null),
+      fetchData(NEWS_URL).catch(()=>null)
     ]);
-
-    let SD = null;
-    if(stateRaw && stateRaw.text) {
-      SD = parseState(stateRaw.text);
+    let SD=null;
+    if(stateRaw&&stateRaw.text)SD=parseState(stateRaw.text);
+    const html=buildHTML(C,H,SD,newsData);
+    $('#app').innerHTML=html;
+    const ts=C.cache_timestamp||C.date||'';
+    $('#ut').textContent=`${C.date||''} ${C.time||''} | v${C.version||'?'}`;
+    // Check for signal change notification
+    const lastSignal=localStorage.getItem('qclaw-signal');
+    const passCount=SD?SD.reentry.filter(r=>r.s==='p').length:0;
+    const curSignal=C.score>=6&&passCount>=4?'green':C.score>=4||passCount>=3?'yellow':'red';
+    if(lastSignal&&lastSignal!==curSignal&&Notification.permission==='granted'){
+      new Notification('QClaw 交易信号变化',{body:`${lastSignal==='red'?'🔴':'🟡'} → ${curSignal==='green'?'🟢可以买入':curSignal==='yellow'?'🟡继续观望':'🔴禁止入场'}`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"><text y="32" font-size="32">📊</text></svg>'});
     }
-
-    const html = buildHTML(C, H, SD);
-    $('#app').innerHTML = html;
-
-    // Update header
-    const ts = C.cache_timestamp || C.date || '';
-    $('#ut').textContent = `${C.date||''} ${C.time||''} | v${C.version||'?'}`;
-    
-    const now = new Date();
-    $('#rf').textContent = `🔄 ${REFRESH_MIN}分钟自动刷新 | 上次加载: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-
-  } catch(e) {
-    $('#app').innerHTML = `<div class="card error-card"><div class="ct">⚠️ 加载失败</div><div style="color:var(--red);font-size:13px;padding:12px">${e.message}<br><br>请稍后刷新重试</div></div>`;
+    localStorage.setItem('qclaw-signal',curSignal);
+  }catch(e){
+    $('#app').innerHTML=`<div class="card error-card"><div class="ct">⚠️ 加载失败</div><div style="color:var(--red);font-size:13px;padding:12px">${e.message}<br><br>请稍后刷新重试</div></div>`;
   }
 }
-
 main();
+setInterval(main,REFRESH_MIN*60*1000);
 
-// Auto-refresh
-setInterval(main, REFRESH_MIN * 60 * 1000);
+// PWA Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

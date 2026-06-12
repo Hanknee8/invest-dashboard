@@ -214,10 +214,10 @@ async function requestNotify(){
 
 function parseState(t){
   const d={cash:0,total:0,safety:9000,avail:0,locked:1000,cooling:[],reentry:[],val:[],trades:[],dates:[],news:[],sectors:[],navHistory:[]};
-  const m=t.match(/现金[：:]\s*~?(\d+)/);if(m)d.cash=+m[1];
-  const m2=t.match(/总资产[：:]\s*~?(\d+)/);if(m2)d.total=+m2[1];
-  const m3=t.match(/可动用[：:]\s*~?(\d+)/);if(m3)d.avail=+m3[1];
-  const m4=t.match(/安全线[：:]\s*(\d+)/);if(m4)d.safety=+m4[1];
+  const m=t.match(/\*?\*?现金[：:]\*?\*?\s*~?(\d+)/);if(m)d.cash=+m[1];
+  const m2=t.match(/\*?\*?总资产[：:]\*?\*?\s*~?(\d+)/);if(m2)d.total=+m2[1];
+  const m3=t.match(/\*?\*?可动用[：:]\*?\*?\s*~?(\d+)/);if(m3)d.avail=+m3[1];
+  const m4=t.match(/\*?\*?安全线[：:]\*?\*?\s*(\d+)/);if(m4)d.safety=+m4[1];
   d.locked=d.cash-d.avail;
 
   const re=t.match(/## 再入场条件[\s\S]*?(?=\n---|\n##|$)/);
@@ -256,21 +256,23 @@ function parseState(t){
   d.sectors=sectorDefs.map(s=>{
     let status='free',thawDate=null,reason='';
     if(frozenLine&&frozenLine[1].includes(s.id)){status='frozen';reason='冷却中'}
-    // Check valuation block
-    if(s.id==='S1'&&d.val.find(v=>v.s.includes('半导体'))){const vp=d.val.find(v=>v.s.includes('半导体'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
-    if(s.id==='S2'&&d.val.find(v=>v.s.includes('CPO'))){const vp=d.val.find(v=>v.s.includes('CPO'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
+    // Check valuation block (overrides frozen if valuation locked)
+    if(s.id==='S1'){const vp=d.val.find(v=>v.s.includes('半导体'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
+    if(s.id==='S2'){const vp=d.val.find(v=>v.s.includes('CPO'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
+    // S4 电力: only AI-power-policy trigger, default free
+    // S6 科技制造: free but only as satellite
     // Find thaw date
     const coolItem=d.cooling.find(c=>c.sec&&c.sec.includes(s.id));
     if(coolItem&&coolItem.td&&coolItem.td!=='—')thawDate=coolItem.td;
     return{...s,status,thawDate,reason}
   });
 
-  // Parse nav history from trades
-  let runningTotal=1200; // starting amount
-  d.navHistory=[{date:'6/5',value:1200}];
+  // Parse nav history from trades (approximate — based on recorded operations)
+  // NOTE: This is a rough estimate. For accurate tracking, use trade-journal.jsonl
+  let runningTotal=10000; // starting amount (merged account baseline 6/8)
+  d.navHistory=[{date:'6/8',value:10000}];
   for(const tr of d.trades){
     const amt=parseFloat((tr.m||'0').replace(/[^0-9.-]/g,''))||0;
-    const pl=parseFloat((tr.pl||'0').replace(/[^0-9.+]/g,''))||0;
     if(tr.a.includes('卖出'))runningTotal+=amt;
     else runningTotal-=amt;
     d.navHistory.push({date:tr.dt,value:Math.round(runningTotal)});
@@ -284,6 +286,9 @@ function pctColor(p){return p>90?'var(--red)':p>80?'var(--orange)':p>60?'var(--y
 
 function daysUntil(dateStr){
   if(!dateStr||dateStr==='—')return null;
+  // Handle ranges like '6/12-14' → use start date
+  const rangeM=dateStr.match(/^(\d+)\/(\d+)-(\d+)$/);
+  if(rangeM){dateStr=rangeM[1]+'/'+rangeM[2]}
   const m=dateStr.match(/(\d+)\/(\d+)/);
   if(!m)return null;
   const target=new Date(2026,+m[1]-1,+m[2]);
@@ -306,14 +311,20 @@ function buildHTML(C,H,SD,newsData){
   // === 1. 交易信号灯 ===
   const passCount=SD?SD.reentry.filter(r=>r.s==='p').length:0;
   const totalRe=SD?SD.reentry.length:6;
-  const signalCls=sc>=6&&passCount>=4?'green':sc>=4||passCount>=3?'yellow':'red';
+  // Signal logic: green requires score>=6 AND 4/6 reentry AND valuation<90%
+  // yellow: score>=4 or 3/6 reentry (but still blocked by valuation)
+  // red: everything else
+  const valBlock=SD&&SD.val&&SD.val.some(v=>{const pn=parseInt(v.p.replace(/[^0-9]/g,''))||0;return pn>90});
+  const signalCls=sc>=6&&passCount>=4&&!valBlock?'green':sc>=4||passCount>=3?'yellow':'red';
   const signalIcon=signalCls==='green'?'🟢':signalCls==='yellow'?'🟡':'🔴';
   const signalText=signalCls==='green'?'可以买入':signalCls==='yellow'?'继续观望':'禁止入场';
-  const signalReason=signalCls==='red'?
-    (passCount+'/'+totalRe+'项条件满足，估值>90%⛔'):
+  const signalReason=valBlock?
+    ('估值>90%⛔ 即使评分'+ef.toFixed(1)+'也无法买入'):
+    signalCls==='red'?
+    (passCount+'/'+totalRe+'项条件满足，评分不足'):
     signalCls==='yellow'?
     ('评分'+ef.toFixed(1)+'/10，'+passCount+'/'+totalRe+'项满足'):
-    '评分'+ef.toFixed(1)+'≥6，'+passCount+'/'+totalRe+'项全部满足✅';
+    '评分'+ef.toFixed(1)+'≥6，'+passCount+'/'+totalRe+'项满足✅';
   html+=`<div class="card signal-card signal-${signalCls}">
     <div class="signal-light">${signalIcon}</div>
     <div class="signal-text">${signalText}</div>
@@ -326,8 +337,11 @@ function buildHTML(C,H,SD,newsData){
     for(const r of SD.reentry){
       const dotCls=r.s==='p'?'pass':r.s==='w'?'warn':'fail';
       const icon=r.s==='p'?'✓':r.s==='w'?'!':'✗';
-      const stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
-      html+=`<div class="reentry-item"><div class="reentry-dot ${dotCls}">${icon}</div><div class="reentry-label">${r.c}</div><div class="reentry-status" style="color:${r.s==='p'?'var(--green)':r.s==='w'?'var(--yellow)':'var(--red)'}">${stxt.slice(0,12)}</div></div>`;
+      let stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
+      if(!stxt)stxt=r.s==='p'?'满足':r.s==='w'?'缓解中':'不满足';
+      const dispLen=14;
+      if(stxt.length>dispLen)stxt=stxt.slice(0,dispLen)+'…';
+      html+=`<div class="reentry-item"><div class="reentry-dot ${dotCls}">${icon}</div><div class="reentry-label">${r.c}</div><div class="reentry-status" style="color:${r.s==='p'?'var(--green)':r.s==='w'?'var(--yellow)':'var(--red)'}">${stxt}</div></div>`;
     }
     html+=`<div class="reentry-progress"><div class="reentry-bar">`;
     for(const r of SD.reentry)html+=`<div class="reentry-pip ${r.s==='p'?'pass':r.s==='w'?'warn':'fail'}"></div>`;
@@ -386,7 +400,11 @@ function buildHTML(C,H,SD,newsData){
     if(sectors.length>0){
       html+=`<div class="card"><div class="ct">🔥 板块资金热力图</div><div class="heatmap">`;
       for(const s of sectors){
-        const chg=s.data?.涨跌幅;
+        let chg=s.data?.涨跌幅;
+        // Fallback: try sub-sector fields
+        if(chg===null||chg===undefined){
+          chg=s.data?.半导体设备涨跌幅??s.data?.半导体材料涨跌幅??s.data?.通信工程涨跌幅??s.data?.通信服务涨跌幅;
+        }
         if(chg===null||chg===undefined)continue;
         const n=+chg;
         const bg=n>3?'#22c55e30':n>0?'#22c55e15':n>-3?'#ef444415':'#ef444430';
@@ -435,7 +453,7 @@ function buildHTML(C,H,SD,newsData){
         const days=daysUntil(c.td);
         const cdText=formatCountdown(days);
         const cls=days===null?'cool-free':days<=0?'cool-free cool-thaw-today':days<=3?'cool-thawing':days<=7?'cool-thawing':'cool-frozen';
-        html+=`<div class="cool-item"><div class="cool-sector">${c.sec}</div><div class="cool-name">${c.c}</div><div class="cool-countdown ${cls}">${cdText}</div><div class="cool-date">解冻 ${c.td}</div></div>`;
+        html+=`<div class="cool-item"><div class="cool-sector">${c.sec} · ${c.f}</div><div class="cool-name">${c.c}</div><div class="cool-countdown ${cls}">${cdText}</div><div class="cool-date">解冻 ${c.td} · ${c.tp}</div></div>`;
       }
       html+=`</div></div>`;
     }

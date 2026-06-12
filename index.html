@@ -11,11 +11,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header{text-align:center;padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px}
 .header h1{font-size:20px;background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .header .sub{font-size:11px;color:var(--dim);margin-top:2px}
+.header .refresh{font-size:10px;color:var(--dim);margin-top:4px;opacity:0.7}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))}
 .ct{font-size:12px;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:4px}
-
-/* Score */
 .score-center{text-align:center;padding:6px 0}
 .score-num{font-size:56px;font-weight:800;line-height:1}
 .score-of{font-size:14px;color:var(--dim)}
@@ -25,26 +24,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb.g{background:var(--green)}.sb.y{background:var(--yellow)}.sb.r{background:var(--red)}
 .score-act{margin-top:8px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;display:inline-block}
 .act-g{background:#22c55e20;color:var(--green)}.act-y{background:#eab30820;color:var(--yellow)}.act-r{background:#ef444420;color:var(--red)}
-
-/* Dim */
 .dr{display:flex;align-items:center;padding:5px 0;border-bottom:1px solid #ffffff06}
 .dr:last-child{border:none}
 .dn{font-size:12px;color:#94a3b8;width:60px;flex-shrink:0}
 .db{flex:1;height:5px;background:var(--border);border-radius:3px;margin:0 8px;overflow:hidden}
 .df{height:100%;border-radius:3px}
 .dv{font-size:12px;font-weight:700;width:32px;text-align:right;flex-shrink:0}
-
-/* Chart - pure SVG */
 .chart-svg{width:100%;height:160px}
-
-/* Re-entry */
 .cr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px}
 .ci{font-size:14px;width:20px;text-align:center;flex-shrink:0}
 .cx{flex:1;color:#94a3b8}
 .cs{font-size:11px;font-weight:600;padding:1px 6px;border-radius:3px;flex-shrink:0}
 .p{background:#22c55e20;color:var(--green)}.f{background:#ef444420;color:var(--red)}.w{background:#eab30820;color:var(--yellow)}
-
-/* Valuation */
 .vr{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff06}
 .vr:last-child{border:none}
 .vs{font-size:12px;font-weight:600;width:52px}
@@ -52,8 +43,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .vb{flex:1;height:6px;background:var(--border);border-radius:3px;margin:0 8px;overflow:hidden}
 .vf{height:100%;border-radius:3px}
 .vst{font-size:11px;font-weight:600;padding:1px 6px;border-radius:3px}
-
-/* Cash */
 .cash{text-align:center;padding:8px 0}
 .cash-n{font-size:32px;font-weight:800;color:var(--blue)}
 .cash-l{font-size:11px;color:var(--dim);margin-top:2px}
@@ -61,15 +50,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cash-item{text-align:center}
 .cash-v{font-size:16px;font-weight:700}
 .cash-il{font-size:10px;color:var(--dim);margin-top:1px}
-
-/* Cooling */
 .cl{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid #ffffff06}
 .cl:last-child{border:none}
 .cl-s{color:#94a3b8;flex:1}
 .cl-d{font-weight:600;flex-shrink:0;margin-left:8px}
 .cl-ok{color:var(--green)}.cl-w{color:var(--orange)}
-
-/* Trade */
 .tr{display:flex;gap:6px;padding:4px 0;font-size:11px;align-items:center;border-bottom:1px solid #ffffff06}
 .tr:last-child{border:none}
 .tr-a{font-weight:600;min-width:28px}
@@ -77,205 +62,235 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tr-f{color:var(--text);flex:1}
 .tr-m{color:#94a3b8;min-width:48px;text-align:right}
 .tr-pl{min-width:48px;text-align:right;font-weight:600}
-
-/* Dates */
 .dt{display:flex;gap:8px;padding:3px 0;font-size:12px;border-bottom:1px solid #ffffff06}
 .dt:last-child{border:none}
 .dt-d{color:var(--blue);font-weight:700;min-width:44px}
 .dt-e{color:#94a3b8}
+.loading{text-align:center;padding:60px 0;color:var(--dim);font-size:14px}
+.error-card{background:#ef444415;border-color:#ef444440}
 </style>
 </head>
 <body>
 <div class="header">
   <h1>📊 QClaw 投资看板</h1>
-  <div class="sub" id="ut">加载中</div>
+  <div class="sub" id="ut">加载中...</div>
+  <div class="refresh" id="rf"></div>
 </div>
 
-<div id="app"></div>
+<div id="app"><div class="loading">⏳ 正在加载数据...</div></div>
 
 <script>
-const C={"date": "2026-06-12", "time": "15:28", "version": "5.1", "data_source": "东方财富直连(80.push2+天天基金+估值API+AKShare)", "score": 3.5, "dimensions": {"资金流向": {"score": 1, "max": 2, "reason": "主力净流入27.8亿(占比3.69%强)"}, "龙头位置": {"score": 2.0, "max": 2, "reason": "龙头均涨5.6%(强); [连跌]龙头逆势上涨→承接力强; 通信微涨0.6%"}, "政策催化": {"score": 0, "max": 2, "reason": "需AI根据新闻补充"}, "板块趋势": {"score": 0, "max": 2, "reason": "数据不足"}, "成交量": {"score": 0.5, "max": 2, "reason": "成交额754亿(正常)"}, "_连跌承接力": {"detected": true, "drop_days": 2, "note": "连跌场景，评分侧重承接力，不乘1.25"}}, "action_guide": "🟠主线走弱→减仓一半(评分<5)或清仓(<3)", "entry_paths": {"路径A左侧": "连跌2天+有效评分≥6(原版，连跌场景侧重承接力)", "路径B右侧": "企稳3天(连续3天评分≥5且无单日<3)+有效评分≥5+估值分位<80%", "路径C强确认": "再入场5条件全满足(主力净流入+龙头涨停+政策催化+缩量止跌+估值合理)"}, "valuation": {"半导体": {"估值百分位": "数据不足", "铁律30判定": "需AI用web_search获取准确估值分位", "数据来源": "需AI校准"}, "CPO通信": {"估值百分位": "数据不足", "铁律30判定": "需AI用web_search获取准确估值分位", "数据来源": "需AI校准"}}, "valuation_auto": {"半导体": {"行业": "半导体", "成分股数量": 200, "有效PE数量": 200, "有效PB数量": 200, "中位PE": 204.28, "PE_25分位": 188.41, "PE_75分位": 222.97, "中位PB": 6.34, "PB_25分位": 5.97, "PB_75分位": 6.77, "市值加权PE": 210.66, "PE近5年分位(推算)": null}, "通信设备": {"行业": "通信设备", "成分股数量": 200, "有效PE数量": 200, "有效PB数量": 200, "中位PE": 69.91, "PE_25分位": 62.37, "PE_75分位": 77.87, "中位PB": 24.05, "PB_25分位": 21.43, "PB_75分位": 28.68, "市值加权PE": 71.55, "PE近5年分位(推算)": null}, "全市场": {"全市场PB中位数": 2.78, "全市场PB近10年分位": 60.92, "全市场PB全历史分位": 51.54, "上证收盘": 3979.71, "数据日期": "2026-06-11", "数据条数": 5198}}, "sector_data": {"半导体": {"涨跌幅": null, "半导体材料涨跌幅": null, "半导体设备涨跌幅": 0.17, "成交额": 754.19, "主力净流入": 27.83, "主力净流入占比_材料": null, "主力净流入占比_设备": 3.69, "龙头平均涨幅": 5.64, "上涨家数": 10, "下跌家数": 12}, "CPO通信": {"涨跌幅": 0.58, "通信服务涨跌幅": null, "通信应用涨跌幅": null, "通信工程涨跌幅": 0.58, "成交额": 41.73, "主力净流入": 0.14, "主力净流入占比": null, "板块名称": "通信服务(合并)"}}, "overseas": {"纳斯达克": {"代码": "gb_ixic", "名称": "纳斯达克综合", "涨跌幅": 2.54, "最新价": 25809.6595}, "费城半导体": {"代码": "gb_sox", "名称": "费城半导体", "涨跌幅": 7.91, "最新价": 13171.4389}, "上证指数": {"代码": "000001", "名称": "上证指数", "涨跌幅": 1.12, "最新价": 4031.5129}, "创业板指": {"代码": "399006", "名称": "创业板指", "涨跌幅": 0.5, "最新价": 3830.353}}, "fund_nav": {"020640": {"基金代码": "020640", "基金名称": "广发半导体设备ETF联接C", "净值日期": "2026-06-11", "净值": 3.0924, "估值": 3.0151, "估值涨跌": -2.5, "估值时间": "2026-06-12 15:00"}, "016874": {"基金代码": "016874", "基金名称": "广发远见智选混合C", "净值日期": "2026-06-11", "净值": 1.959, "估值": 1.9418, "估值涨跌": -0.88, "估值时间": "2026-06-12 15:00"}, "018125": {"基金代码": "018125", "基金名称": "永赢先进制造智选混合发起C", "净值日期": "2026-06-11", "净值": 2.2859, "估值": 2.252, "估值涨跌": -1.48, "估值时间": "2026-06-12 15:00"}, "012922": {"基金代码": "012922", "基金名称": "易方达全球成长精选混合(QDII)人民币C", "净值日期": "2026-06-10", "净值": 4.2339, "估值": 4.2704, "估值涨跌": 0.86, "估值时间": "2026-06-12 04:00"}}, "valuation_trend": {"dates": ["2026-06-10", "2026-06-11", "2026-06-12"], "半导体": [null, null, null], "CPO通信": [null, null, null], "半导体趋势": "数据不足(需3天)", "CPO通信趋势": "数据不足(需3天)"}, "effective_score": 4.25, "score_history_last5": [{"date": "2026-06-11", "score": 5.5, "effective": 5.25}, {"date": "2026-06-11", "score": 5.5, "effective": 5.5}, {"date": "2026-06-12", "score": 2.5, "effective": 4.0}, {"date": "2026-06-12", "score": 2.5, "effective": 2.5}, {"date": "2026-06-12", "score": 3.5, "effective": 4.25}], "overseas_filter": {"纳指涨跌幅": 2.54, "费半涨跌幅": 7.91}, "ai_supplement_needed": ["政策催化评分(0-2分)", "半导体估值分位(历史数据不足30天,需web_search)", "CPO通信估值分位(历史数据不足30天,需web_search)"], "cache_timestamp": "2026-06-12T15:28:33.220649"};
-const H=[{"date": "2026-06-10", "score": 2.5, "dimensions": {"资金流向": 0, "龙头位置": 0, "政策催化": 0, "板块趋势": 0.5, "成交量": 0}, "semi_valuation": 93.79, "cpo_valuation": 99.83, "effective_score": 4.25, "time": "14:27", "note": "速报cron写入"}, {"date": "2026-06-10", "score": 5.0, "dimensions": {"资金流向": 1.5, "龙头位置": 1, "政策催化": 0, "板块趋势": 1, "成交量": 1.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 5.0, "time": "20:55", "note": "收盘后验证(新浪API)"}, {"date": "2026-06-10", "score": 5.0, "dimensions": {"资金流向": 1.5, "龙头位置": 1, "政策催化": 0, "板块趋势": 1, "成交量": 1.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 5.0}, {"date": "2026-06-11", "score": 5.5, "dimensions": {"资金流向": 2, "龙头位置": 1, "政策催化": 0, "板块趋势": 1, "成交量": 1.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 5.25}, {"date": "2026-06-11", "score": 5.5, "dimensions": {"资金流向": 2, "龙头位置": 1, "政策催化": 0, "板块趋势": 1, "成交量": 1.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 5.5}, {"date": "2026-06-12", "score": 2.5, "dimensions": {"资金流向": 1, "龙头位置": 1, "政策催化": 0, "板块趋势": 0, "成交量": 0.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 4.0}, {"date": "2026-06-12", "score": 2.5, "dimensions": {"资金流向": 1, "龙头位置": 1, "政策催化": 0, "板块趋势": 0, "成交量": 0.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 2.5}, {"date": "2026-06-12", "score": 3.5, "dimensions": {"资金流向": 1, "龙头位置": 2.0, "政策催化": 0, "板块趋势": 0, "成交量": 0.5}, "semi_valuation": null, "cpo_valuation": null, "effective_score": 4.25}];
-const S_TEXT={"text": "# 📊 state.md — 每日状态（cron自动更新）\n\n> 更新日期：2026-06-12 | cron每次读写此文件\n> 合并自：portfolio.md + market.md 的每日变动部分\n\n---\n\n## 当前持仓\n\n| 基金 | 代码 | 赛道 | 本金 | 浮盈率 | 状态 |\n|------|------|------|------|--------|------|\n| （空仓） | — | — | — | — | 全现金等待 |\n\n**现金：** ~9881元 | **总资产：** ~9881元 | **安全线：** 9000元 ✅\n**可动用：** ~8881元（9881-1000永不满仓）\n\n> ✅ 6/12已卖出016874(~413元)+012922(~39元)，总现金约~9881元，持仓=0，全现金等待建仓\n\n---\n\n## 🚫 冷却期\n\n| 基金 | 代码 | 赛道 | 卖出日 | 类型 | 解冻日 |\n|------|------|------|--------|------|--------|\n| 012922 | 全球成长(QDII) | S10其他 | 6/12 | 止损 | 7/12 |\n| 016874 | 远见智选(科技制造) | S6 | 6/12 | 止盈→无冷却 | — |\n| 020640 | 半导体设备 | S1 | 6/10 | 止盈→无冷却 | — |\n| 018125 | 先进制造 | S5 | 6/11 | 止损 | 7/11 |\n| 020065 | 科技创新 | S3 | 6/8 | 止损 | 7/8 |\n| 022167/017193/290008 | 资源/有色/锂矿 | S7 | 6/8 | 止损 | 7/8 |\n| 022328 | 化工 | S8 | 6/8 | 止损 | 7/8 |\n| 015790 | 商业航天 | S9 | 6/8 | 止损 | 7/8 |\n\n**冻结赛道：** S3/S7/S8/S9(7/8) | S5(7/11) | S10(7/12)\n**可操作赛道：** S1(半导体设备)✅ | S2(CPO/光通信)✅ | S6(科技制造)✅\n**卫星仓位：** S4(电力)⚠️仅AI电力政策事件触发，非日常可操作\n\n---\n\n## 评分（双轨）\n\n### 最新评分：5/10 🟡（6/12收盘详报）\n\n| 维度 | 得分 |\n|------|------|\n| 资金流向 | 1/2 |\n| 龙头位置 | 1.5/2 |\n| 政策催化 | 1/2 |\n| 板块趋势 | 0.5/2 |\n| 成交量 | 1/2 |\n\n有效评分=5.25（2天均值：(5.5+5.0)/2）→ 🟡震荡偏强\n\n### 评分趋势\n| 日期 | 早间 | 收盘 |\n|------|------|------|\n| 6/8 | 2 🔴 | 2 🔴 |\n| 6/9 | — | 6 🟡 |\n| 6/10 | 2.5 🔴 | 5.0 🟡 |\n| 6/11 | 5.5 🟡 | 5.5 🟡 |\n| 6/12 | 2.5 🔴 | 5.0 🟡 |\n\n---\n\n## 估值水位\n\n| 板块 | 分位 | 状态 |\n|------|------|------|\n| 半导体 | ~92% | ⛔>90%禁买入（小幅回落但仍超标） |\n| CPO通信 | ~98% | ⛔>90%禁买入 |\n\n> 估值仍>90%，禁止买入。需等待回落至<90%方可入场\n\n---\n\n## 大盘/海外\n\n| 指数 | 涨跌 | 状态 |\n|------|------|------|\n| 上证 | +1.22% | ✅未触发 |\n| 创业板指 | +0.69% | ✅未触发 |\n| 科创50 | +0.71% | ✅未触发 |\n| 半导体板块 | -1.32% | ⚠️逆势下跌 |\n| 纳指 | +2.54% | ✅反弹 |\n| 道琼斯 | +1.86% | ✅反弹 |\n\n**海外过滤器：** 已归档（012922清仓，无QDII持仓）\n**A股过滤器：✅未触发**\n**地缘过滤器：🟡缓解中**（中东局势好转，伊朗和解方案可能周末签字，霍尔木兹海峡或将重新开放）\n\n---\n\n## 再入场条件\n\n| # | 条件 | 状态 |\n|---|------|------|\n| 1 | 评分≥5 | ✅5.25 |\n| 2 | 企稳3天(路径B) | ❌6/10-12仅3天但6/10半导体大跌，不满足\"企稳\" |\n| 3 | 大盘过滤器未触发 | ✅ |\n| 4 | 估值<90% | ❌92%+98%⛔ |\n| 5 | 海外企稳 | ✅纳指+2.54% |\n| 6 | 无重大地缘冲突 | 🟡伊朗和解中，尚未签字 |\n\n**3✅3❌ → 禁止入场！**\n地缘触发时允许谨慎入场：评分≥6+仓位减半\n\n**下一个窗口：** 估值回落<90%后即可入场（S1/S6止盈无冷却期限制，S2也无冷却期）\n\n---\n\n## 操作记录\n\n| 日期 | 操作 | 基金 | 代码 | 金额 | 盈亏 | 依据 |\n|------|------|------|------|------|------|------|\n| 6/8 | 卖出 | 6只杂毛 | — | ~8365 | -944 | 安全线止损 |\n| 6/10 | 卖出 | 半导体设备C | 020640 | ~225 | +25 | 止盈+12% |\n| 6/11 | 卖出 | 先进制造C | 018125 | ~204 | ~0 | 非主线+评分<3 |\n| 6/12 | 卖出 | 远见智选C | 016874 | ~413 | ~+13 | CPO主力出逃+主动型占比超限 |\n| 6/12 | 卖出 | 全球成长C | 012922 | ~39 | ~-1 | 39元配4规则不合算+海外无做多环境 |\n\n---\n\n## 关键日期\n\n| 日期 | 事件 |\n|------|------|\n| 6/12-14 | 华为开发者大会HDC 2026 |\n| 6/15 | 深证指数样本调整 |\n| 6/16 | 美联储FOMC会议 |\n| 6/17 | 美联储FOMC利率决议 |\n| 6/18 | IEA月度原油报告 |\n| 6/23-25 | 大连夏季达沃斯论坛 |\n| 6/24 | 英伟达年度会议 |\n| 7/8 | S3/S7/S8/S9冷却期解冻 |\n"};
+// Data URL - auto-refreshes from GitHub repo
+const DATA_URL = 'https://raw.githubusercontent.com/Hanknee8/invest-dashboard/main/data.json';
+const STATE_URL = 'https://raw.githubusercontent.com/Hanknee8/invest-dashboard/main/state.json';
+const HISTORY_URL = 'https://raw.githubusercontent.com/Hanknee8/invest-dashboard/main/history.json';
+const REFRESH_MIN = 5;
 
 function $(s,p){return(p||document).querySelector(s)}
 function $$(s,p){return[...(p||document).querySelectorAll(s)]}
 
-// Parse state.md
-function parseState(t){
-  const d={cash:0,total:0,safety:9000,avail:0,cooling:[],reentry:[],val:[],trades:[],dates:[],scoreTrend:[]};
-  const m=t.match(/现金[：:]\s*~?(\d+)/);if(m)d.cash=+m[1];
-  const m2=t.match(/总资产[：:]\s*~?(\d+)/);if(m2)d.total=+m2[1];
-  const m3=t.match(/可动用[：:]\s*~?(\d+)/);if(m3)d.avail=+m3[1];
-  const m4=t.match(/安全线[：:]\s*(\d+)/);if(m4)d.safety=+m4[1];
-  
-  // Re-entry
-  const re=t.match(/## 再入场条件[\s\S]*?(?=\n---|\n##|$)/);
+// Fetch with cache-bust
+async function fetchData(url) {
+  const sep = url.includes('?') ? '&' : '?';
+  const r = await fetch(url + sep + '_t=' + Date.now());
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// Parse state.md text into structured data
+function parseState(t) {
+  const d = {cash:0,total:0,safety:9000,avail:0,cooling:[],reentry:[],val:[],trades:[],dates:[]};
+  const m = t.match(/现金[：:]\s*~?(\d+)/); if(m) d.cash = +m[1];
+  const m2 = t.match(/总资产[：:]\s*~?(\d+)/); if(m2) d.total = +m2[1];
+  const m3 = t.match(/可动用[：:]\s*~?(\d+)/); if(m3) d.avail = +m3[1];
+  const m4 = t.match(/安全线[：:]\s*(\d+)/); if(m4) d.safety = +m4[1];
+
+  const re = t.match(/## 再入场条件[\s\S]*?(?=\n---|\n##|$)/);
   if(re){const rows=[...re[0].matchAll(/\|\s*(\d+)\s*\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){if(!r[2].includes('条件')){let s='f';if(r[3].includes('✅'))s='p';else if(r[3].includes('🟡'))s='w';
     d.reentry.push({n:r[1],c:r[2].trim(),s,raw:r[3].trim()})}}}
-  
-  // Valuation
-  const vl=t.match(/## 估值水位[\s\S]*?(?=\n---|\n##|$)/);
+
+  const vl = t.match(/## 估值水位[\s\S]*?(?=\n---|\n##|$)/);
   if(vl){const rows=[...vl[0].matchAll(/\|\s*([^|\n]+)\|\s*([^|\n]+)\|\s*([^|\n]+)\|/g)];
     for(const r of rows){if(!r[1].includes('板块'))d.val.push({s:r[1].trim(),p:r[2].trim(),st:r[3].trim()})}}
-  
-  // Cooling
-  const cl=t.match(/## 🚫 冷却期[\s\S]*?(?=\n---|\n##|$)/);
+
+  const cl = t.match(/## 🚫 冷却期[\s\S]*?(?=\n---|\n##|$)/);
   if(cl){const rows=[...cl[0].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
-    for(const r of rows){const f=r[1].trim();if(f&&!f.startsWith('基金')&&!f.startsWith('012922|'))
-    d.cooling.push({f,c:r[2].trim().replace(/[^0-9/]/g,''),sec:r[3].trim(),sd:r[4].trim(),tp:r[5].trim(),td:r[6].trim()})}}
-  
-  // Trades
-  const tr=t.match(/## 操作记录[\s\S]*?(?=\n---|\n##|$)/);
+    for(const r of rows){const f=r[1].trim();if(f&&!f.startsWith('基金'))
+    d.cooling.push({f,c:r[2].trim(),sec:r[3].trim(),sd:r[4].trim(),tp:r[5].trim(),td:r[6].trim()})}}
+
+  const tr = t.match(/## 操作记录[\s\S]*?(?=\n---|\n##|$)/);
   if(tr){const rows=[...tr[0].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){const dt=r[1].trim();if(dt&&!dt.startsWith('日期'))
     d.trades.push({dt,a:r[2].trim(),f:r[3].trim(),c:r[4].trim(),m:r[5].trim(),pl:r[6].trim()})}}
-  
-  // Dates
-  const kd=t.match(/## 关键日期([\s\S]*?)$/);
+
+  const kd = t.match(/## 关键日期([\s\S]*?)$/);
   if(kd){const rows=[...kd[1].matchAll(/\|\s*([^|]+)\|\s*([^|]+)\|/g)];
     for(const r of rows){const dd=r[1].trim();if(dd&&!dd.startsWith('日期'))d.dates.push({d:dd,e:r[2].trim()})}}
-  
-  // Score trend
-  const st=t.matchAll(/\|\s*(6\/\d+)\s*\|\s*([\d.]+)\s*[🔴🟡🟢]?\s*\|\s*([\d.]+)\s*[🔴🟡🟢]?\s*\|/g);
-  for(const r of st)d.scoreTrend.push({d:r[1],m:+r[2],c:+r[3]});
-  
+
   return d;
 }
 
-const SD=parseState(S_TEXT.text||'');
-const sc=C.score||0,ef=C.effective_score||0;
-
-// Build score color
 function scColor(v){return v>=6?'var(--green)':v>=4?'var(--yellow)':'var(--red)'}
 
-// Build HTML
-let html='';
+function buildHTML(C, H, SD) {
+  const sc = C.score || 0, ef = C.effective_score || 0;
+  let html = '';
 
-// === Score Card ===
-html+=`<div class="card"><div class="ct">🎯 主线健康度</div>
+  // Score Card
+  html += `<div class="card"><div class="ct">🎯 主线健康度</div>
 <div class="score-center">
 <div class="score-num" style="color:${scColor(sc)}">${sc.toFixed(1)}</div>
 <div class="score-of">/10</div>
 <div class="score-eff">有效评分 ${ef.toFixed(2)}（2天均值）</div>
 <div class="score-bar">`;
-for(let i=0;i<10;i++){const c=i<sc?(sc>=6?'g':sc>=4?'y':'r'):'';html+=`<div class="sb ${c}"></div>`;}
-html+=`</div><div class="score-act ${sc>=6?'act-g':sc>=4?'act-y':'act-r'}">${sc>=6?'🟢 可入场':sc>=4?'🟡 震荡观察':'🔴 减仓/清仓'}</div></div></div>`;
+  for(let i=0;i<10;i++){const c=i<sc?(sc>=6?'g':sc>=4?'y':'r'):'';html+=`<div class="sb ${c}"></div>`;}
+  html += `</div><div class="score-act ${sc>=6?'act-g':sc>=4?'act-y':'act-r'}">${sc>=6?'🟢 可入场':sc>=4?'🟡 震荡观察':'🔴 减仓/清仓'}</div></div></div>`;
 
-// === Dimensions ===
-const dims=C.dimensions||{};
-const dimOrder=['资金流向','龙头位置','政策催化','板块趋势','成交量'];
-html+=`<div class="card"><div class="ct">📐 评分维度</div>`;
-for(const name of dimOrder){
-  const d=dims[name];const v=d?d.score:0;const mx=d?d.max:2;const pct=Math.round(v/mx*100);
-  const cl=v/mx>=0.6?'var(--green)':v/mx>=0.3?'var(--yellow)':'var(--red)';
-  html+=`<div class="dr"><div class="dn">${name}</div><div class="db"><div class="df" style="width:${pct}%;background:${cl}"></div></div><div class="dv" style="color:${cl}">${v}/${mx}</div></div>`;
-}
-html+=`</div>`;
-
-// === Score Chart (SVG) ===
-// Aggregate history by date (last entry per day)
-const dailyMap={};
-for(const h of H){if(!dailyMap[h.date]||h.time>=(dailyMap[h.date].time||''))dailyMap[h.date]=h;}
-const entries=Object.entries(dailyMap).sort((a,b)=>a[0].localeCompare(b[0]));
-if(entries.length>0){
-  const labels=entries.map(e=>e[0].slice(5));
-  const scores=entries.map(e=>e[1].score);
-  const effs=entries.map(e=>e[1].effective_score||e[1].score);
-  const W=320,H2=130,P=30,PB=20;
-  const xScale=(i)=>P+i*(W-2*P)/(labels.length-1||1);
-  const yScale=(v)=>H2-PB-v/10*(H2-P-PB);
-  
-  function makeLine(data,color){
-    let pts=data.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');
-    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+  // Dimensions
+  const dims = C.dimensions || {};
+  const dimOrder = ['资金流向','龙头位置','政策催化','板块趋势','成交量'];
+  html += `<div class="card"><div class="ct">📐 评分维度</div>`;
+  for(const name of dimOrder){
+    const d=dims[name];const v=d?d.score:0;const mx=d?d.max:2;const pct=Math.round(v/mx*100);
+    const cl=v/mx>=0.6?'var(--green)':v/mx>=0.3?'var(--yellow)':'var(--red)';
+    html+=`<div class="dr"><div class="dn">${name}</div><div class="db"><div class="df" style="width:${pct}%;background:${cl}"></div></div><div class="dv" style="color:${cl}">${v}/${mx}</div></div>`;
   }
-  function makeDots(data,color){
-    return data.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="${color}"/>`).join('');
+  html += `</div>`;
+
+  // Score Chart
+  if(H && H.length > 0) {
+    const dailyMap = {};
+    for(const h of H){if(!dailyMap[h.date]||h.time>=(dailyMap[h.date].time||''))dailyMap[h.date]=h;}
+    const entries = Object.entries(dailyMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    if(entries.length > 0) {
+      const labels=entries.map(e=>e[0].slice(5));
+      const scores=entries.map(e=>e[1].score);
+      const effs=entries.map(e=>e[1].effective_score||e[1].score);
+      const W=320,H2=130,P=30,PB=20;
+      const xScale=(i)=>P+i*(W-2*P)/(labels.length-1||1);
+      const yScale=(v)=>H2-PB-v/10*(H2-P-PB);
+      function makeLine(data,color){let pts=data.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;}
+      function makeDots(data,color){return data.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="${color}"/>`).join('');}
+      const y5=yScale(5),y3=yScale(3);
+      html+=`<div class="card"><div class="ct">📈 评分趋势</div>
+      <svg viewBox="0 0 ${W} ${H2}" class="chart-svg" preserveAspectRatio="xMidYMid meet">
+      <line x1="${P}" y1="${y5}" x2="${W-P}" y2="${y5}" stroke="#22c55e40" stroke-dasharray="4 3"/><text x="${W-P+2}" y="${y5+3}" fill="#22c55e80" font-size="8">5</text>
+      <line x1="${P}" y1="${y3}" x2="${W-P}" y2="${y3}" stroke="#ef444440" stroke-dasharray="4 3"/><text x="${W-P+2}" y="${y3+3}" fill="#ef444480" font-size="8">3</text>
+      ${makeLine(effs,'#f59e0b')}${makeDots(effs,'#f59e0b')}
+      ${makeLine(scores,'#8b5cf6')}${makeDots(scores,'#8b5cf6')}
+      ${labels.map((l,i)=>`<text x="${xScale(i)}" y="${H2-4}" fill="#6b7a90" font-size="7" text-anchor="middle">${l}</text>`).join('')}
+      </svg>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:4px;font-size:10px;color:#6b7a90">
+      <span style="color:#f59e0b">● 有效评分</span><span style="color:#8b5cf6">● 评分</span><span style="color:#22c55e80">--- 买入线</span><span style="color:#ef444480">--- 危险线</span>
+      </div></div>`;
+    }
   }
-  // Reference lines
-  const y5=yScale(5),y3=yScale(3);
-  
-  html+=`<div class="card"><div class="ct">📈 评分趋势</div>
-  <svg viewBox="0 0 ${W} ${H2}" class="chart-svg" preserveAspectRatio="xMidYMid meet">
-  <line x1="${P}" y1="${y5}" x2="${W-P}" y2="${y5}" stroke="#22c55e40" stroke-dasharray="4 3"/><text x="${W-P+2}" y="${y5+3}" fill="#22c55e80" font-size="8">5</text>
-  <line x1="${P}" y1="${y3}" x2="${W-P}" y2="${y3}" stroke="#ef444440" stroke-dasharray="4 3"/><text x="${W-P+2}" y="${y3+3}" fill="#ef444480" font-size="8">3</text>
-  ${makeLine(effs,'#f59e0b')}${makeDots(effs,'#f59e0b')}
-  ${makeLine(scores,'#8b5cf6')}${makeDots(scores,'#8b5cf6')}
-  ${labels.map((l,i)=>`<text x="${xScale(i)}" y="${H2-4}" fill="#6b7a90" font-size="7" text-anchor="middle">${l}</text>`).join('')}
-  </svg>
-  <div style="display:flex;justify-content:center;gap:12px;margin-top:4px;font-size:10px;color:#6b7a90">
-  <span style="color:#f59e0b">● 有效评分</span><span style="color:#8b5cf6">● 评分</span><span style="color:#22c55e80">--- 买入线</span><span style="color:#ef444480">--- 危险线</span>
-  </div></div>`;
-}
 
-// === Re-entry ===
-html+=`<div class="card"><div class="ct">🚦 再入场条件</div>`;
-for(const r of SD.reentry){
-  const icon=r.s==='p'?'✅':r.s==='w'?'🟡':'❌';
-  const cls=r.s==='p'?'p':r.s==='w'?'w':'f';
-  const stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
-  html+=`<div class="cr"><div class="ci">${icon}</div><div class="cx">${r.c}</div><div class="cs ${cls}">${stxt}</div></div>`;
-}
-html+=`</div>`;
+  // Re-entry
+  if(SD && SD.reentry && SD.reentry.length > 0) {
+    html += `<div class="card"><div class="ct">🚦 再入场条件</div>`;
+    for(const r of SD.reentry){
+      const icon=r.s==='p'?'✅':r.s==='w'?'🟡':'❌';
+      const cls=r.s==='p'?'p':r.s==='w'?'w':'f';
+      const stxt=r.raw.replace(/[✅❌🟡⛔]/g,'').trim();
+      html+=`<div class="cr"><div class="ci">${icon}</div><div class="cx">${r.c}</div><div class="cs ${cls}">${stxt}</div></div>`;
+    }
+    html += `</div>`;
+  }
 
-// === Valuation ===
-html+=`<div class="card"><div class="ct">📐 估值水位</div>`;
-for(const v of SD.val){
-  const pn=parseInt(v.p.replace(/[^0-9]/g,''))||0;
-  const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
-  const cls=pn>90?'f':pn>80?'w':'p';
-  const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'禁止买入':pn>80?'不加仓':'可买');
-  html+=`<div class="vr"><div class="vs" style="color:var(--text)">${v.s}</div><div class="vp" style="color:${cl}">${v.p}</div><div class="vb"><div class="vf" style="width:${Math.min(pn,100)}%;background:${cl}"></div></div><div class="vst ${cls}">${stx}</div></div>`;
-}
-html+=`</div>`;
+  // Valuation
+  if(SD && SD.val && SD.val.length > 0) {
+    html += `<div class="card"><div class="ct">📐 估值水位</div>`;
+    for(const v of SD.val){
+      const pn=parseInt(v.p.replace(/[^0-9]/g,''))||0;
+      const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
+      const cls=pn>90?'f':pn>80?'w':'p';
+      const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'禁止买入':pn>80?'不加仓':'可买');
+      html+=`<div class="vr"><div class="vs" style="color:var(--text)">${v.s}</div><div class="vp" style="color:${cl}">${v.p}</div><div class="vb"><div class="vf" style="width:${Math.min(pn,100)}%;background:${cl}"></div></div><div class="vst ${cls}">${stx}</div></div>`;
+    }
+    html += `</div>`;
+  }
 
-// === Cash ===
-html+=`<div class="card"><div class="ct">💰 账户概览</div>
+  // Cash
+  if(SD) {
+    html += `<div class="card"><div class="ct">💰 账户概览</div>
 <div class="cash"><div class="cash-n">${SD.total.toLocaleString()}</div><div class="cash-l">总资产（元）</div>
 <div class="cash-row">
 <div class="cash-item"><div class="cash-v">${SD.cash.toLocaleString()}</div><div class="cash-il">现金</div></div>
 <div class="cash-item"><div class="cash-v">${SD.avail.toLocaleString()}</div><div class="cash-il">可动用</div></div>
 <div class="cash-item"><div class="cash-v" style="color:var(--green)">${SD.safety.toLocaleString()}</div><div class="cash-il">安全线</div></div>
 </div></div></div>`;
+  }
 
-// === Cooling ===
-html+=`<div class="card"><div class="ct">🚫 冷却期</div>`;
-const now=new Date();
-let coolHTML='';
-for(const c of SD.cooling){
-  if(!c.td||c.td==='—')continue;
-  const tp=c.td.split('/');
-  const thaw=new Date(2026,+tp[0]-1,+tp[1]);
-  const diff=Math.ceil((thaw-now)/(864e5));
-  const ok=diff<=0;
-  coolHTML+=`<div class="cl"><div class="cl-s">${c.c} ${c.f}</div><div class="cl-d ${ok?'cl-ok':'cl-w'}">${c.td}</div></div>`;
+  // Cooling
+  if(SD && SD.cooling) {
+    html += `<div class="card"><div class="ct">🚫 冷却期</div>`;
+    let coolHTML = '';
+    for(const c of SD.cooling){
+      if(!c.td||c.td==='—')continue;
+      coolHTML+=`<div class="cl"><div class="cl-s">${c.c} ${c.f}</div><div class="cl-d cl-w">${c.td}</div></div>`;
+    }
+    html += coolHTML || '<div style="color:var(--dim);text-align:center;padding:12px;font-size:12px">无冷却期</div>';
+    html += `</div>`;
+  }
+
+  // Trades
+  if(SD && SD.trades && SD.trades.length > 0) {
+    html += `<div class="card"><div class="ct">📋 近期操作</div>`;
+    for(const t of SD.trades){
+      const isBuy=t.a.includes('买');
+      const plcls=t.pl.includes('+')?'var(--green)':t.pl.includes('-')?'var(--red)':'var(--dim)';
+      html+=`<div class="tr"><div class="tr-a ${isBuy?'tr-buy':'tr-sell'}">${isBuy?'买入':'卖出'}</div><div class="tr-f">${t.f}</div><div class="tr-m">${t.m}</div><div class="tr-pl" style="color:${plcls}">${t.pl}</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Key Dates
+  if(SD && SD.dates && SD.dates.length > 0) {
+    html += `<div class="card"><div class="ct">📅 关键日期</div>`;
+    for(const d of SD.dates){
+      html+=`<div class="dt"><div class="dt-d">${d.d}</div><div class="dt-e">${d.e}</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  return html;
 }
-html+=coolHTML||'<div style="color:var(--dim);text-align:center;padding:12px;font-size:12px">无冷却期</div>';
-html+=`</div>`;
 
-// === Trades ===
-html+=`<div class="card"><div class="ct">📋 近期操作</div>`;
-for(const t of SD.trades){
-  const isBuy=t.a.includes('买');
-  const plcls=t.pl.includes('+')?'var(--green)':t.pl.includes('-')?'var(--red)':'var(--dim)';
-  html+=`<div class="tr"><div class="tr-a ${isBuy?'tr-buy':'tr-sell'}">${isBuy?'买入':'卖出'}</div><div class="tr-f">${t.f}</div><div class="tr-m">${t.m}</div><div class="tr-pl" style="color:${plcls}">${t.pl}</div></div>`;
+// Main
+async function main() {
+  try {
+    const [C, H, stateRaw] = await Promise.all([
+      fetchData(DATA_URL),
+      fetchData(HISTORY_URL).catch(()=>[]),
+      fetchData(STATE_URL).catch(()=>null)
+    ]);
+
+    let SD = null;
+    if(stateRaw && stateRaw.text) {
+      SD = parseState(stateRaw.text);
+    }
+
+    const html = buildHTML(C, H, SD);
+    $('#app').innerHTML = html;
+
+    // Update header
+    const ts = C.cache_timestamp || C.date || '';
+    $('#ut').textContent = `${C.date||''} ${C.time||''} | v${C.version||'?'}`;
+    
+    const now = new Date();
+    $('#rf').textContent = `🔄 ${REFRESH_MIN}分钟自动刷新 | 上次加载: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+  } catch(e) {
+    $('#app').innerHTML = `<div class="card error-card"><div class="ct">⚠️ 加载失败</div><div style="color:var(--red);font-size:13px;padding:12px">${e.message}<br><br>请稍后刷新重试</div></div>`;
+  }
 }
-html+=`</div>`;
 
-// === Key Dates ===
-html+=`<div class="card"><div class="ct">📅 关键日期</div>`;
-for(const d of SD.dates){
-  html+=`<div class="dt"><div class="dt-d">${d.d}</div><div class="dt-e">${d.e}</div></div>`;
-}
-html+=`</div>`;
+main();
 
-$('#app').innerHTML=html;
-$('#ut').textContent=`${C.date||''} ${C.time||''} | v${C.version||'?'}`;
-
-// Auto-refresh every 5 min
-setTimeout(()=>location.reload(),300000);
+// Auto-refresh
+setInterval(main, REFRESH_MIN * 60 * 1000);
 </script>
 </body>
 </html>

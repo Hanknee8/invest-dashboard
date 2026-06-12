@@ -562,7 +562,11 @@ async function main(){
     const html=buildHTML(C,H,SD,newsData);
     $('#app').innerHTML=html;
     const ts=C.cache_timestamp||C.date||'';
-    $('#ut').textContent=`${C.date||''} ${C.time||''} | v${C.version||'?'}`;
+    // Relative + absolute time
+    const cacheTs=C.cache_timestamp?new Date(C.cache_timestamp):null;
+    let relTime='';
+    if(cacheTs){const ago=Math.round((Date.now()-cacheTs)/60000);relTime=ago<1?'刚刚':ago<60?ago+'分钟前':Math.round(ago/60)+'小时前';}
+    $('#ut').textContent=`${relTime?relTime+' · ':''}${C.date||''} ${C.time||''} | v${C.version||'?'}`;
     // Check for signal change notification
     const lastSignal=localStorage.getItem('qclaw-signal');
     const passCount=SD?SD.reentry.filter(r=>r.s==='p').length:0;

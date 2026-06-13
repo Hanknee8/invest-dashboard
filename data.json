@@ -205,29 +205,24 @@
     "effective_score":  2.75,
     "score_history_last5":  [
                                 {
+                                    "date":  "2026-06-10",
+                                    "score":  5,
+                                    "effective":  5
+                                },
+                                {
                                     "date":  "2026-06-11",
                                     "score":  5.5,
                                     "effective":  5.5
                                 },
                                 {
                                     "date":  "2026-06-12",
-                                    "score":  2.5,
-                                    "effective":  4.0
-                                },
-                                {
-                                    "date":  "2026-06-12",
-                                    "score":  2.5,
-                                    "effective":  2.5
-                                },
-                                {
-                                    "date":  "2026-06-12",
-                                    "score":  3.5,
-                                    "effective":  4.25
+                                    "score":  5,
+                                    "effective":  5.25
                                 },
                                 {
                                     "date":  "2026-06-13",
-                                    "score":  2.0,
-                                    "effective":  2.75
+                                    "score":  5,
+                                    "effective":  5.25
                                 }
                             ],
     "overseas_filter":  {

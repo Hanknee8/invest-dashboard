@@ -233,6 +233,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cal-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:4px;transition:all .2s}
 .cal-btn:active{transform:scale(.95);background:var(--blue20);color:var(--blue)}
 .cal-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* === 维度展开详情 === */
+.dim-row{border-radius:4px;transition:background .15s}
+.dim-row:hover{background:var(--card2)}
+.dim-detail{max-height:0;overflow:hidden;transition:max-height .25s ease}
+.dim-detail.open{max-height:80px}
+.dim-detail-inner{font-size:10px;color:var(--dim);padding:2px 0 6px 62px;line-height:1.6;border-bottom:1px solid #ffffff06}
 </style>
 </head>
 <body>
@@ -449,14 +456,52 @@ function buildHTML(C,H,SD,newsData){
   for(let i=0;i<10;i++){const c=i<sc?(sc>=6?'g':sc>=4?'y':'r'):'';html+=`<div class="sb ${c}"></div>`;}
   html+=`</div></div></div>`;
 
-  // Dimensions
+  // Dimensions (click to expand raw data)
   const dims=C.dimensions||{};
   const dimOrder=['资金流向','龙头位置','政策催化','板块趋势','成交量'];
-  html+=`<div class="card"><div class="ct">📐 评分维度</div>`;
+  // Build raw data map from sector_data
+  const semiRaw=C.sector_data?.半导体||{};
+  const cpoRaw=C.sector_data?.CPO通信||{};
+  const rawMap={
+    '资金流向':[
+      `半导体主力净流入: ${semiRaw['主力净流入']!=null?(semiRaw['主力净流入']>=0?'+':'')+semiRaw['主力净流入'].toFixed(1)+'亿':'—'}`,
+      `CPO主力净流入: ${cpoRaw['主力净流入']!=null?(cpoRaw['主力净流入']>=0?'+':'')+cpoRaw['主力净流入'].toFixed(1)+'亿':'—'}`,
+      semiRaw['主力净流入占比_材料']?`材料占比: ${semiRaw['主力净流入占比_材料']}%`:'',
+      semiRaw['主力净流入占比_设备']?`设备占比: ${semiRaw['主力净流入占比_设备']}%`:'',
+      cpoRaw['主力净流入占比']?`CPO占比: ${cpoRaw['主力净流入占比']}%`:'',
+    ].filter(Boolean).join(' | '),
+    '龙头位置':[
+      semiRaw['龙头平均涨幅']!=null?`半导体龙头均涨幅: ${semiRaw['龙头平均涨幅']>=0?'+':''}${semiRaw['龙头平均涨幅'].toFixed(2)}%`:'',
+      `半导体涨跌家数: ${semiRaw['上涨家数']||0}涨 / ${semiRaw['下跌家数']||0}跌`,
+      `CPO涨跌家数: ${cpoRaw['上涨家数']||0}涨 / ${cpoRaw['下跌家数']||0}跌`,
+    ].filter(Boolean).join(' | '),
+    '政策催化':dims['政策催化']?.reason||'需AI根据新闻补充',
+    '板块趋势':[
+      semiRaw['涨跌幅']!=null?`半导体: ${(semiRaw['涨跌幅']>=0?'+':'')+semiRaw['涨跌幅'].toFixed(2)}%`:'',
+      semiRaw['半导体材料涨跌幅']!=null?`材料: ${(semiRaw['半导体材料涨跌幅']>=0?'+':'')+semiRaw['半导体材料涨跌幅'].toFixed(2)}%`:'',
+      semiRaw['半导体设备涨跌幅']!=null?`设备: ${(semiRaw['半导体设备涨跌幅']>=0?'+':'')+semiRaw['半导体设备涨跌幅'].toFixed(2)}%`:'',
+      cpoRaw['涨跌幅']!=null?`CPO: ${(cpoRaw['涨跌幅']>=0?'+':'')+cpoRaw['涨跌幅'].toFixed(2)}%`:'',
+      cpoRaw['通信服务涨跌幅']!=null?`通信服务: ${(cpoRaw['通信服务涨跌幅']>=0?'+':'')+cpoRaw['通信服务涨跌幅'].toFixed(2)}%`:'',
+    ].filter(Boolean).join(' | '),
+    '成交量':dims['成交量']?.reason||'数据不足',
+  };
+  html+=`<div class="card"><div class="ct">📐 评分维度 <span style="font-size:9px;color:var(--dim);font-weight:400">| 点击展开详情</span></div>`;
   for(const name of dimOrder){
     const d=dims[name];const v=d?d.score:0;const mx=d?d.max:2;const pct=Math.round(v/mx*100);
     const cl=v/mx>=0.6?'var(--green)':v/mx>=0.3?'var(--yellow)':'var(--red)';
-    html+=`<div class="dr"><div class="dn">${name}</div><div class="db"><div class="df" style="width:${pct}%;background:${cl}"></div></div><div class="dv" style="color:${cl}">${v}/${mx}</div></div>`;
+    const reason=d?.reason||'';
+    const rawData=rawMap[name]||reason;
+    const hasDetail=rawData&&rawData!=='数据不足'&&rawData!=='需AI根据新闻补充';
+    html+=`<div class="dim-row" onclick="toggleDim(this)" style="cursor:${hasDetail?'pointer':'default'}">`;
+    html+=`<div class="dr"><div class="dn">${name} ${hasDetail?'<span style=\'font-size:8px;opacity:.5\'>▸</span>':''}</div><div class="db"><div class="df" style="width:${pct}%;background:${cl}"></div></div><div class="dv" style="color:${cl}">${v}/${mx}</div></div>`;
+    if(hasDetail){
+      html+=`<div class="dim-detail"><div class="dim-detail-inner">${rawData}</div></div>`;
+    }
+    html+=`</div>`;
+  }
+  // Show consecutive drop info if detected
+  if(dims['_连跌承接力']?.detected){
+    html+=`<div style="font-size:10px;color:var(--orange);margin-top:6px;padding:4px 8px;background:var(--yellow20);border-radius:4px">⚡ 连跌${dims['_连跌承接力'].drop_days}天，评分侧重承接力</div>`;
   }
   html+=`</div>`;
 
@@ -722,6 +767,15 @@ if('serviceWorker' in navigator){
 function toggleSignal(el){
   const detail=el.querySelector('.signal-detail');
   if(detail)detail.classList.toggle('open');
+}
+
+// 1b. 维度点击展开原始数据
+function toggleDim(el){
+  const detail=el.querySelector('.dim-detail');
+  if(!detail)return;
+  detail.classList.toggle('open');
+  const arrow=el.querySelector('.dn span');
+  if(arrow)arrow.textContent=detail.classList.contains('open')?'▾':'▸';
 }
 
 // 2. 赛道方块tap展开

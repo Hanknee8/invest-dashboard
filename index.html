@@ -282,26 +282,28 @@ function parseState(t){
   ];
   d.sectors=sectorDefs.map(s=>{
     let status='free',thawDate=null,reason='';
-    if(frozenLine&&frozenLine[1].includes(s.id)){status='frozen';reason='冷却中'}
+    // Use word-boundary match to avoid S1 matching S10
+    const sectorRe=new RegExp('\\b'+s.id+'\\b');
+    if(frozenLine&&sectorRe.test(frozenLine[1])){status='frozen';reason='冷却中'}
     // Check valuation block (overrides frozen if valuation locked)
     if(s.id==='S1'){const vp=d.val.find(v=>v.s.includes('半导体'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
     if(s.id==='S2'){const vp=d.val.find(v=>v.s.includes('CPO'));if(vp){const pn=parseInt(vp.p.replace(/[^0-9]/g,''))||0;if(pn>90){status='valblock';reason='估值>'+pn+'%⛔'}}}
     // S4 电力: only AI-power-policy trigger, default free
     // S6 科技制造: free but only as satellite
     // Find thaw date
-    const coolItem=d.cooling.find(c=>c.sec&&c.sec.includes(s.id));
+    const coolItem=d.cooling.find(c=>c.sec&&sectorRe.test(c.sec));
     if(coolItem&&coolItem.td&&coolItem.td!=='—')thawDate=coolItem.td;
     return{...s,status,thawDate,reason}
   });
 
-  // Parse nav history from trades (approximate — based on recorded operations)
-  // NOTE: This is a rough estimate. For accurate tracking, use trade-journal.jsonl
+  // Parse nav history: use profit/loss column (pl) instead of amount to avoid double-counting
+  // The 10000 baseline already includes all sale proceeds, so we only add profits/losses
   let runningTotal=10000; // starting amount (merged account baseline 6/8)
   d.navHistory=[{date:'6/8',value:10000}];
   for(const tr of d.trades){
-    const amt=parseFloat((tr.m||'0').replace(/[^0-9.-]/g,''))||0;
-    if(tr.a.includes('卖出'))runningTotal+=amt;
-    else runningTotal-=amt;
+    const plStr=(tr.pl||'0').replace(/[^0-9.-]/g,'');
+    const pl=parseFloat(plStr)||0;
+    runningTotal+=pl; // positive=profit, negative=loss
     d.navHistory.push({date:tr.dt,value:Math.round(runningTotal)});
   }
 
@@ -318,7 +320,7 @@ function daysUntil(dateStr){
   if(rangeM){dateStr=rangeM[1]+'/'+rangeM[2]}
   const m=dateStr.match(/(\d+)\/(\d+)/);
   if(!m)return null;
-  const target=new Date(2026,+m[1]-1,+m[2]);
+  const target=new Date(new Date().getFullYear(),+m[1]-1,+m[2]);
   const now=new Date();
   now.setHours(0,0,0,0);
   return Math.ceil((target-now)/(86400000));

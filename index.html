@@ -129,9 +129,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sector-box:hover .sector-tip,.sector-box:active .sector-tip{display:block}
 
 /* === 7. 今日快讯 === */
-.news-scroll{overflow:hidden;height:72px;position:relative}
+.news-scroll{overflow:hidden;height:72px;position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .news-track{animation:scroll-up 12s linear infinite}
-.news-track:hover{animation-play-state:paused}
+.news-track:hover,.news-track.paused{animation-play-state:paused}
 @keyframes scroll-up{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .news-item{padding:6px 0;border-bottom:1px solid #ffffff06;font-size:12px;line-height:1.4;display:flex;gap:6px;align-items:flex-start}
 .news-tag{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;margin-top:2px}
@@ -368,7 +368,12 @@ function parseState(t){
   return d;
 }
 
-function scColor(v){return v>=6?'var(--green)':v>=4?'var(--yellow)':'var(--red)'}
+function scColor(v){
+  // Smooth gradient: 2→red, 5→yellow, 8→green
+  if(v<=2)return'var(--red)';if(v>=8)return'var(--green)';
+  if(v<=5){const t=(v-2)/3;return`hsl(${Math.round(t*45)},85%,50%)`}
+  const t=(v-5)/3;return`hsl(${Math.round(45+t*80)},85%,48%)`
+}
 function pctColor(p){return p>90?'var(--red)':p>80?'var(--orange)':p>60?'var(--yellow)':'var(--green)'}
 
 function daysUntil(dateStr){
@@ -416,6 +421,20 @@ function buildHTML(C,H,SD,newsData){
   html+=`<div class="signal-light">${signalIcon}</div>`;
   html+=`<div class="signal-text anim-num">${signalText}</div>`;
   html+=`<div class="signal-reason">${signalReason}</div>`;
+  // #2 Empty position day counter
+  if(SD&&SD.trades&&SD.trades.length>0){
+    const sellTrades=SD.trades.filter(t=>t.a.includes('卖'));
+    if(sellTrades.length>0){
+      const lastSell=sellTrades[sellTrades.length-1];
+      const m=lastSell.dt&&lastSell.dt.match(/(\d+)\/(\d+)/);
+      if(m){
+        const sellDate=new Date(new Date().getFullYear(),+m[1]-1,+m[2]);
+        const now=new Date();now.setHours(0,0,0,0);
+        const emptyDays=Math.max(1,Math.ceil((now-sellDate)/86400000)+1);
+        html+=`<div style="font-size:11px;color:var(--cyan);margin-top:4px;opacity:.8">💤 空仓第${emptyDays}天</div>`;
+      }
+    }
+  }
   // 点击展开详情
   html+=`<div class="signal-detail" id="signalDetail">`;
   if(SD&&SD.reentry.length>0){
@@ -579,13 +598,15 @@ function buildHTML(C,H,SD,newsData){
     const locked=SD.locked||SD.cash-SD.avail;
     const safety=SD.safety;
     const aboveSafety=(total-safety)/total*100;
+    const safetyDist=total-safety;
     html+=`<div class="card"><div class="ct">💰 现金火力</div>
 <div class="cash-main"><div class="cash-total">${total.toLocaleString()}</div><div class="cash-label">总资产（元）</div></div>
 <div class="cash-bars">
 <div class="cash-row"><div class="cash-row-label">可动用</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${(avail/total*100).toFixed(0)}%;background:var(--blue)"></div></div><div class="cash-row-val" style="color:var(--blue)">${avail.toLocaleString()}</div></div>
 <div class="cash-row"><div class="cash-row-label">锁定</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${(locked/total*100).toFixed(0)}%;background:var(--dim)"></div></div><div class="cash-row-val" style="color:var(--dim)">${locked.toLocaleString()}</div></div>
 <div class="cash-row"><div class="cash-row-label">安全线</div><div class="cash-row-bar"><div class="cash-row-fill" style="width:${aboveSafety.toFixed(0)}%;background:var(--green)"></div></div><div class="cash-row-val" style="color:var(--green)">${safety.toLocaleString()}</div></div>
-</div></div>`;
+</div>
+<div style="text-align:center;font-size:11px;color:${safetyDist>0?'var(--green)':'var(--red)'};margin-top:6px;padding:4px 8px;background:${safetyDist>0?'var(--green20)':'var(--red20)'};border-radius:6px">🛡️ 距安全线 ${safetyDist>0?'+':''}${safetyDist.toLocaleString()}元 (${safetyDist>0?'+':''}${(safetyDist/safety*100).toFixed(1)}%)</div></div>`;
   }
 
   // === 4. 冷却期倒计时 ===
@@ -680,7 +701,11 @@ function buildHTML(C,H,SD,newsData){
 
   // Trades (collapsible)
   if(SD&&SD.trades&&SD.trades.length>0){
-    html+=`<div class="card collapsible collapsed" id="tradesCard"><div class="card-toggle ct" onclick="toggleCard('tradesCard')">📋 近期操作</div><div class="card-body">`;
+    html+=`<div class="card collapsible collapsed" id="tradesCard"><div class="card-toggle ct" onclick="toggleCard('tradesCard')">📋 近期操作 <span style="font-size:9px;color:var(--dim);font-weight:400">${SD.trades.length}笔</span></div><div class="card-body">`;
+    // #4 P&L summary
+    let totalPL=0;
+    for(const t of SD.trades){const plStr=(t.pl||'0').replace(/[^0-9.-]/g,'');totalPL+=parseFloat(plStr)||0;}
+    html+=`<div style="display:flex;justify-content:space-between;padding:4px 8px;margin-bottom:6px;border-radius:6px;background:${totalPL>=0?'var(--green20)':'var(--red20)'};font-size:12px;font-weight:700"><span>累计盈亏</span><span style="color:${totalPL>=0?'var(--green)':'var(--red)'}">${totalPL>=0?'+':''}${totalPL}元</span></div>`;
     for(const t of SD.trades){
       const isBuy=t.a.includes('买');
       const plcls=t.pl.includes('+')?'var(--green)':t.pl.includes('-')?'var(--red)':'var(--dim)';
@@ -757,6 +782,9 @@ async function main(){
 }
 main();
 setInterval(main,REFRESH_MIN*60*1000);
+
+// #5 News tap-to-pause
+document.addEventListener('click',e=>{const ns=e.target.closest('.news-scroll');if(ns){const track=ns.querySelector('.news-track');if(track)track.classList.toggle('paused')}});
 
 // PWA Service Worker
 if('serviceWorker' in navigator){

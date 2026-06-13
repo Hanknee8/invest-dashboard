@@ -64,8 +64,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* === 3. 估值温度计 === */
 .thermo{display:flex;align-items:center;gap:12px;padding:4px 0}
 .thermo-label{font-size:12px;font-weight:600;width:60px;flex-shrink:0}
-.thermo-bar{flex:1;height:14px;border-radius:7px;background:linear-gradient(90deg,#3b82f6 0%,#22c55e 30%,#eab308 60%,#f97316 80%,#ef4444 100%);position:relative;overflow:hidden}
-.thermo-fill{position:absolute;top:0;bottom:0;right:0;background:var(--card2);opacity:.7;border-radius:0 7px 7px 0}
+.thermo-bar{flex:1;height:14px;border-radius:7px;background:var(--border);position:relative;overflow:hidden}
+.thermo-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;transition:width .6s}
 .thermo-pct{font-size:14px;font-weight:800;width:44px;text-align:right;flex-shrink:0}
 .thermo-status{font-size:10px;font-weight:600;padding:1px 6px;border-radius:3px;flex-shrink:0;white-space:nowrap}
 .thermo-hot{animation:blink 1.2s infinite}
@@ -430,7 +430,7 @@ function buildHTML(C,H,SD,newsData){
       if(m){
         const sellDate=new Date(new Date().getFullYear(),+m[1]-1,+m[2]);
         const now=new Date();now.setHours(0,0,0,0);
-        const emptyDays=Math.max(1,Math.ceil((now-sellDate)/86400000)+1);
+        const emptyDays=Math.max(1,Math.round((now-sellDate)/86400000)+1);
         html+=`<div style="font-size:11px;color:var(--cyan);margin-top:4px;opacity:.8">💤 空仓第${emptyDays}天</div>`;
       }
     }
@@ -473,7 +473,7 @@ function buildHTML(C,H,SD,newsData){
 <div class="score-of">/10</div>
 <div class="score-eff">有效评分 ${ef.toFixed(2)}（2天均值）</div>
 <div class="score-bar">`;
-  for(let i=0;i<10;i++){const c=i<sc?(sc>=6?'g':sc>=4?'y':'r'):'';html+=`<div class="sb ${c}"></div>`;}
+  for(let i=0;i<10;i++){const active=i<Math.round(sc);html+=`<div class="sb" style="${active?'background:'+scColor(i+1):''}"></div>`;}
   html+=`</div></div></div>`;
 
   // Dimensions (click to expand raw data)
@@ -533,7 +533,8 @@ function buildHTML(C,H,SD,newsData){
       const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
       const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'⛔禁止':pn>80?'⚠️不加仓':'✅可买');
       const hot=pn>90?' thermo-hot':'';
-      html+=`<div class="thermo"><div class="thermo-label">${v.s}</div><div class="thermo-bar"><div class="thermo-fill" style="width:${100-Math.min(pn,100)}%"></div></div><div class="thermo-pct${hot}" style="color:${cl}" data-target="${pn}" id="valPct${v.s.includes('半导')?'Semi':'CPO'}">0%</div><div class="thermo-status" style="background:${pn>90?'var(--red20)':pn>80?'var(--yellow20)':'var(--green20)'};color:${cl}">${stx}</div></div>`;
+      const fillBg=pn>90?'var(--red)':pn>80?'var(--orange)':pn>60?'var(--yellow)':'var(--green)';
+      html+=`<div class="thermo"><div class="thermo-label">${v.s}</div><div class="thermo-bar"><div class="thermo-fill" style="width:${Math.min(pn,100)}%;background:${fillBg}"></div></div><div class="thermo-pct${hot}" style="color:${cl}" data-target="${pn}" id="valPct${v.s.includes('半导')?'Semi':'CPO'}">0%</div><div class="thermo-status" style="background:${pn>90?'var(--red20)':pn>80?'var(--yellow20)':'var(--green20)'};color:${cl}">${stx}</div></div>`;
     }
     html+=`</div>`;
   }
@@ -668,7 +669,7 @@ function buildHTML(C,H,SD,newsData){
     <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>
     ${vals.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="var(--blue)"/>`).join('')}
     ${SD.navHistory.map((n,i)=>`<text x="${xScale(i)}" y="${H2-4}" fill="#6b7a90" font-size="7" text-anchor="middle">${n.date}</text>`).join('')}
-    ${vals.map((v,i)=>`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`).join('')}
+    ${vals.length<=5?vals.map((v,i)=>`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`).join(''):vals.map((v,i)=>i===0||i===vals.length-1?`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`:'').join('')}
     </svg></div>`;
   }
 
@@ -704,7 +705,13 @@ function buildHTML(C,H,SD,newsData){
     html+=`<div class="card collapsible collapsed" id="tradesCard"><div class="card-toggle ct" onclick="toggleCard('tradesCard')">📋 近期操作 <span style="font-size:9px;color:var(--dim);font-weight:400">${SD.trades.length}笔</span></div><div class="card-body">`;
     // #4 P&L summary
     let totalPL=0;
-    for(const t of SD.trades){const plStr=(t.pl||'0').replace(/[^0-9.-]/g,'');totalPL+=parseFloat(plStr)||0;}
+    for(const t of SD.trades){
+      let plStr=t.pl||'0';
+      // Skip percentage-based values like -0.04%
+      if(plStr.includes('%'))continue;
+      plStr=plStr.replace(/[^0-9.-]/g,'');
+      totalPL+=parseFloat(plStr)||0;
+    }
     html+=`<div style="display:flex;justify-content:space-between;padding:4px 8px;margin-bottom:6px;border-radius:6px;background:${totalPL>=0?'var(--green20)':'var(--red20)'};font-size:12px;font-weight:700"><span>累计盈亏</span><span style="color:${totalPL>=0?'var(--green)':'var(--red)'}">${totalPL>=0?'+':''}${totalPL}元</span></div>`;
     for(const t of SD.trades){
       const isBuy=t.a.includes('买');
@@ -784,7 +791,7 @@ main();
 setInterval(main,REFRESH_MIN*60*1000);
 
 // #5 News tap-to-pause
-document.addEventListener('click',e=>{const ns=e.target.closest('.news-scroll');if(ns){const track=ns.querySelector('.news-track');if(track)track.classList.toggle('paused')}});
+document.addEventListener('click',e=>{if(e.target.closest('.news-item a'))return;const ns=e.target.closest('.news-scroll');if(ns&&e.target===ns){const track=ns.querySelector('.news-track');if(track)track.classList.toggle('paused')}});
 
 // PWA Service Worker
 if('serviceWorker' in navigator){

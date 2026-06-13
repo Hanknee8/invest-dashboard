@@ -54,5 +54,19 @@
         "semi_valuation":  null,
         "cpo_valuation":  null,
         "effective_score":  2.75
+    },
+    {
+        "date":  "2026-06-12_close",
+        "score":  5.0,
+        "dimensions":  {
+                           "资金流向":  1,
+                           "龙头位置":  0.5,
+                           "政策催化":  2,
+                           "板块趋势":  0,
+                           "成交量":  1.5
+                       },
+        "semi_valuation":  92,
+        "cpo_valuation":  96,
+        "effective_score":  5.25
     }
 ]

@@ -1,132 +1,58 @@
-[
-  {
-    "date": "2026-06-10",
-    "score": 2.5,
-    "dimensions": {
-      "资金流向": 0,
-      "龙头位置": 0,
-      "政策催化": 0,
-      "板块趋势": 0.5,
-      "成交量": 0
+﻿[
+    {
+        "date":  "2026-06-10",
+        "score":  5.0,
+        "dimensions":  {
+                           "资金流向":  1.5,
+                           "龙头位置":  1,
+                           "政策催化":  0,
+                           "板块趋势":  1,
+                           "成交量":  1.5
+                       },
+        "semi_valuation":  null,
+        "cpo_valuation":  null,
+        "effective_score":  5.0
     },
-    "semi_valuation": 93.79,
-    "cpo_valuation": 99.83,
-    "effective_score": 4.25,
-    "time": "14:27",
-    "note": "速报cron写入"
-  },
-  {
-    "date": "2026-06-10",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
+    {
+        "date":  "2026-06-11",
+        "score":  5.5,
+        "dimensions":  {
+                           "资金流向":  2,
+                           "龙头位置":  1,
+                           "政策催化":  0,
+                           "板块趋势":  1,
+                           "成交量":  1.5
+                       },
+        "semi_valuation":  null,
+        "cpo_valuation":  null,
+        "effective_score":  5.5
     },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.0,
-    "time": "20:55",
-    "note": "收盘后验证(新浪API)"
-  },
-  {
-    "date": "2026-06-10",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
+    {
+        "date":  "2026-06-12",
+        "score":  3.5,
+        "dimensions":  {
+                           "资金流向":  1,
+                           "龙头位置":  2.0,
+                           "政策催化":  0,
+                           "板块趋势":  0,
+                           "成交量":  0.5
+                       },
+        "semi_valuation":  null,
+        "cpo_valuation":  null,
+        "effective_score":  4.25
     },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.0
-  },
-  {
-    "date": "2026-06-11",
-    "score": 5.5,
-    "dimensions": {
-      "资金流向": 2,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.25
-  },
-  {
-    "date": "2026-06-11",
-    "score": 5.5,
-    "dimensions": {
-      "资金流向": 2,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.5
-  },
-  {
-    "date": "2026-06-12",
-    "score": 2.5,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 0,
-      "成交量": 0.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 4.0
-  },
-  {
-    "date": "2026-06-12",
-    "score": 2.5,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 0,
-      "成交量": 0.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 2.5
-  },
-  {
-    "date": "2026-06-12",
-    "score": 3.5,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 2.0,
-      "政策催化": 0,
-      "板块趋势": 0,
-      "成交量": 0.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 4.25
-  },
-  {
-    "date": "2026-06-13",
-    "score": 2.0,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 0.5,
-      "政策催化": 0,
-      "板块趋势": 0,
-      "成交量": 0.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 2.75
-  }
+    {
+        "date":  "2026-06-13",
+        "score":  2.0,
+        "dimensions":  {
+                           "资金流向":  1,
+                           "龙头位置":  0.5,
+                           "政策催化":  0,
+                           "板块趋势":  0,
+                           "成交量":  0.5
+                       },
+        "semi_valuation":  null,
+        "cpo_valuation":  null,
+        "effective_score":  2.75
+    }
 ]

@@ -459,7 +459,9 @@ function buildHTML(C,H,SD,newsData){
 
   // === 6. 赛道状态卡片 ===
   if(SD&&SD.sectors){
-    html+=`<div class="card"><div class="ct">🏭 赛道状态 (S1-S10)</div><div class="sector-grid">`;
+    // v3.6: frozen rules indicator
+  const frozenRules=['扩12主线切换❄️','扩15全局视野❄️','扩16主动型❄️'];
+  html+=`<div class="card"><div class="ct">🏭 赛道状态 (S1-S10) <span style="font-size:9px;color:var(--dim);font-weight:400">| 3条规则冻结中</span></div><div class="sector-grid">`;
     for(const s of SD.sectors){
       const cls=s.status==='free'?'free':s.status==='frozen'?'frozen':s.status==='valblock'?'valblock':'nodata';
       const statusText=s.status==='free'?'✅可操作':s.status==='frozen'?'🔒冷却中':s.status==='valblock'?'⛔估值锁':'—';
@@ -589,6 +591,21 @@ function buildHTML(C,H,SD,newsData){
     html+=`</div></div>`;
   }
 
+  // === v3.6 账户3万解锁进度 ===
+  const currentAsset=SD?SD.total||SD.cash:9881;
+  const unlockTarget=30000;
+  const unlockPct=Math.min(Math.round(currentAsset/unlockTarget*100),100);
+  const unlockItems=[
+    {name:'扩12主线切换',target:'3万',pct:unlockPct},
+    {name:'扩15全局视野',target:'3万',pct:unlockPct},
+    {name:'备用金2000',target:'1.5万',pct:Math.min(Math.round(currentAsset/15000*100),100)}
+  ];
+  html+=`<div class="card collapsible collapsed" id="unlockCard"><div class="card-toggle ct" onclick="toggleCard('unlockCard')">🔓 账户3万解锁 <span style="font-size:9px;color:var(--dim);font-weight:400">${unlockPct}%</span></div><div class="card-body">`;
+  for(const u of unlockItems){
+    html+=`<div style="margin-bottom:8px"><div style="font-size:12px;color:var(--text);margin-bottom:2px">${u.name} <span style="color:var(--dim)">→ ${u.target}</span></div><div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden"><div style="width:${u.pct}%;height:100%;background:${u.pct>=100?'var(--green)':'var(--blue)'};border-radius:4px;transition:width .6s"></div></div><div style="font-size:10px;color:var(--dim);margin-top:1px">${u.pct}%</div></div>`;
+  }
+  html+=`</div></div>`;
+
   // === 12. 推送通知 (collapsible) ===
   html+=`<div class="card collapsible collapsed" id="notifyCard"><div class="card-toggle ct" onclick="toggleCard('notifyCard')">🔔 通知设置</div><div class="card-body"><button class="notify-btn" onclick="requestNotify()">开启评分变化推送通知</button><div style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">评分突变/冷却期解冻时自动提醒</div></div></div>`;
 
@@ -614,7 +631,19 @@ async function main(){
     const cacheTs=C.cache_timestamp?new Date(C.cache_timestamp):null;
     let relTime='';
     if(cacheTs){const ago=Math.round((Date.now()-cacheTs)/60000);relTime=ago<1?'刚刚':ago<60?ago+'分钟前':Math.round(ago/60)+'小时前';}
-    $('#ut').textContent=`${relTime?relTime+' · ':''}${C.date||''} ${C.time||''} | v${C.version||'?'}`;
+    // v3.6 version tag + dynamic stop-loss hint
+    const verTag='v3.6';
+    let extraInfo='';
+    if(SD&&SD.val&&SD.val.length>0){
+      const semiVal=SD.val.find(v=>v.s.includes('半导'));
+      const pn=semiVal?parseInt(semiVal.p.replace(/[^0-9]/g,''))||0:0;
+      const stopLine=pn>90?'-5%':pn>=60?'-7%':'-10%';
+      extraInfo=` | 主线止损${stopLine}`;
+    }
+    const geoTag=SD&&SD.reentry?SD.reentry.find(r=>r.c.includes('地缘')):null;
+    const geoLevel=geoTag?(geoTag.s==='p'?'L0✅':geoTag.s==='w'?'L1观察':'L2+⚠️'):'';
+    const geoInfo=geoLevel?` | 地缘${geoLevel}`:'';
+    $('#ut').textContent=`${relTime?relTime+' · ':''}${C.date||''} ${C.time||''} | ${verTag}${extraInfo}${geoInfo}`;
     // Check for signal change notification
     const lastSignal=localStorage.getItem('qclaw-signal');
     const passCount=SD?SD.reentry.filter(r=>r.s==='p').length:0;

@@ -97,6 +97,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sector-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .sector-box{padding:6px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:transform .15s;border:1px solid transparent;position:relative}
 .sector-box:active{transform:scale(.95)}
+
+/* === 可展开交互 === */
+.expandable{cursor:pointer;transition:all .2s}
+.expand-content{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.expand-content.open{max-height:400px}
+.card-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.card-toggle::after{content:'▸';font-size:12px;color:var(--dim);transition:transform .2s}
+.card-toggle.open::after{transform:rotate(90deg)}
+
+/* === 数字动画 === */
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim-num{animation:countUp .6s ease-out}
+
+/* === 信号灯展开 === */
+.signal-detail{max-height:0;overflow:hidden;transition:max-height .3s ease;margin-top:0}
+.signal-detail.open{max-height:300px;margin-top:10px}
+.signal-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.signal-detail-item{padding:6px 8px;border-radius:6px;background:var(--card2);font-size:11px;text-align:left}
+
+/* === 赛道tap展开 === */
+.sector-detail{display:none;grid-column:1/-1;margin-top:4px;padding:8px;border-radius:6px;background:var(--card2);font-size:11px;line-height:1.6}
+.sector-box.active .sector-detail{display:block}
 .sector-box.free{background:var(--green20);border-color:var(--green40)}
 .sector-box.frozen{background:var(--red20);border-color:var(--red40)}
 .sector-box.valblock{background:var(--yellow20);border-color:var(--yellow40)}
@@ -169,6 +191,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tr-f{color:var(--text);flex:1}
 .tr-m{color:#94a3b8;min-width:44px;text-align:right}
 .tr-pl{min-width:44px;text-align:right;font-weight:600}
+/* === 折叠卡片 === */
+.collapsible .card-toggle{padding:0}
+.collapsible.collapsed .card-body{display:none}
+.card-body{transition:all .2s}
+
 .loading{text-align:center;padding:60px 0;color:var(--dim);font-size:14px}
 .error-card{background:var(--red20);border-color:#ef444440}
 [data-theme="light"] .cool-item,.reentry-item{background:var(--card2)}
@@ -325,11 +352,22 @@ function buildHTML(C,H,SD,newsData){
     signalCls==='yellow'?
     ('评分'+ef.toFixed(1)+'/10，'+passCount+'/'+totalRe+'项满足'):
     '评分'+ef.toFixed(1)+'≥6，'+passCount+'/'+totalRe+'项满足✅';
-  html+=`<div class="card signal-card signal-${signalCls}">
-    <div class="signal-light">${signalIcon}</div>
-    <div class="signal-text">${signalText}</div>
-    <div class="signal-reason">${signalReason}</div>
-  </div>`;
+  html+=`<div class="card signal-card signal-${signalCls} expandable" onclick="toggleSignal(this)">`;
+  html+=`<div class="signal-light">${signalIcon}</div>`;
+  html+=`<div class="signal-text anim-num">${signalText}</div>`;
+  html+=`<div class="signal-reason">${signalReason}</div>`;
+  // 点击展开详情
+  html+=`<div class="signal-detail" id="signalDetail">`;
+  if(SD&&SD.reentry.length>0){
+    html+=`<div class="signal-detail-grid">`;
+    for(const r of SD.reentry){
+      const dotIcon=r.s==='p'?'✅':r.s==='w'?'🟡':'❌';
+      html+=`<div class="signal-detail-item">${dotIcon} ${r.c}: ${r.raw}</div>`;
+    }
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+  html+=`<div style="font-size:10px;color:var(--dim);margin-top:4px;opacity:.6">👆 点击查看详情</div></div>`;
 
   // === 2. 再入场条件进度条 ===
   if(SD&&SD.reentry.length>0){
@@ -352,7 +390,7 @@ function buildHTML(C,H,SD,newsData){
   // === Score Card ===
   html+=`<div class="card"><div class="ct">🎯 主线健康度</div>
 <div class="score-center">
-<div class="score-num" style="color:${scColor(sc)}">${sc.toFixed(1)}</div>
+<div class="score-num anim-num" style="color:${scColor(sc)}" data-target="${sc.toFixed(1)}" id="scoreNum">0.0</div>
 <div class="score-of">/10</div>
 <div class="score-eff">有效评分 ${ef.toFixed(2)}（2天均值）</div>
 <div class="score-bar">`;
@@ -378,7 +416,7 @@ function buildHTML(C,H,SD,newsData){
       const cl=pn>90?'var(--red)':pn>80?'var(--orange)':'var(--green)';
       const stx=v.st.replace(/[⛔⚠️✅]/g,'').trim()||(pn>90?'⛔禁止':pn>80?'⚠️不加仓':'✅可买');
       const hot=pn>90?' thermo-hot':'';
-      html+=`<div class="thermo"><div class="thermo-label">${v.s}</div><div class="thermo-bar"><div class="thermo-fill" style="width:${100-Math.min(pn,100)}%"></div></div><div class="thermo-pct${hot}" style="color:${cl}">${v.p}</div><div class="thermo-status" style="background:${pn>90?'var(--red20)':pn>80?'var(--yellow20)':'var(--green20)'};color:${cl}">${stx}</div></div>`;
+      html+=`<div class="thermo"><div class="thermo-label">${v.s}</div><div class="thermo-bar"><div class="thermo-fill" style="width:${100-Math.min(pn,100)}%"></div></div><div class="thermo-pct${hot}" style="color:${cl}" data-target="${pn}" id="valPct${v.s.includes('半导')?'Semi':'CPO'}">0%</div><div class="thermo-status" style="background:${pn>90?'var(--red20)':pn>80?'var(--yellow20)':'var(--green20)'};color:${cl}">${stx}</div></div>`;
     }
     html+=`</div>`;
   }
@@ -423,7 +461,13 @@ function buildHTML(C,H,SD,newsData){
     for(const s of SD.sectors){
       const cls=s.status==='free'?'free':s.status==='frozen'?'frozen':s.status==='valblock'?'valblock':'nodata';
       const statusText=s.status==='free'?'✅可操作':s.status==='frozen'?'🔒冷却中':s.status==='valblock'?'⛔估值锁':'—';
-      html+=`<div class="sector-box ${cls}"><div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div></div>`;
+      html+=`<div class="sector-box ${cls}" onclick="tapSector(this)">`;
+      html+=`<div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div>`;
+      // tap展开详情
+      const thaw=s.thawDate?`解冻: ${s.thawDate}`:'';
+      const detail=`${statusText}${s.reason?' | '+s.reason:''}${thaw?' | '+thaw:''}`;
+      html+=`<div class="sector-detail">${detail}</div>`;
+      html+=`</div>`;
     }
     html+=`</div></div>`;
   }
@@ -532,19 +576,19 @@ function buildHTML(C,H,SD,newsData){
     html+=`</div>`;
   }
 
-  // Trades
+  // Trades (collapsible)
   if(SD&&SD.trades&&SD.trades.length>0){
-    html+=`<div class="card"><div class="ct">📋 近期操作</div>`;
+    html+=`<div class="card collapsible collapsed" id="tradesCard"><div class="card-toggle ct" onclick="toggleCard('tradesCard')">📋 近期操作</div><div class="card-body">`;
     for(const t of SD.trades){
       const isBuy=t.a.includes('买');
       const plcls=t.pl.includes('+')?'var(--green)':t.pl.includes('-')?'var(--red)':'var(--dim)';
       html+=`<div class="tr"><div class="tr-a ${isBuy?'tr-buy':'tr-sell'}">${isBuy?'买入':'卖出'}</div><div class="tr-f">${t.f}</div><div class="tr-m">${t.m}</div><div class="tr-pl" style="color:${plcls}">${t.pl}</div></div>`;
     }
-    html+=`</div>`;
+    html+=`</div></div>`;
   }
 
-  // === 12. 推送通知 ===
-  html+=`<div class="card"><div class="ct">🔔 通知设置</div><button class="notify-btn" onclick="requestNotify()">开启评分变化推送通知</button><div style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">评分突变/冷却期解冻时自动提醒</div></div>`;
+  // === 12. 推送通知 (collapsible) ===
+  html+=`<div class="card collapsible collapsed" id="notifyCard"><div class="card-toggle ct" onclick="toggleCard('notifyCard')">🔔 通知设置</div><div class="card-body"><button class="notify-btn" onclick="requestNotify()">开启评分变化推送通知</button><div style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">评分突变/冷却期解冻时自动提醒</div></div></div>`;
 
   return html;
 }
@@ -561,6 +605,8 @@ async function main(){
     if(stateRaw&&stateRaw.text)SD=parseState(stateRaw.text);
     const html=buildHTML(C,H,SD,newsData);
     $('#app').innerHTML=html;
+    // === 数字动画 ===
+    animateNumbers();
     const ts=C.cache_timestamp||C.date||'';
     // Relative + absolute time
     const cacheTs=C.cache_timestamp?new Date(C.cache_timestamp):null;
@@ -585,6 +631,57 @@ setInterval(main,REFRESH_MIN*60*1000);
 // PWA Service Worker
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// === 交互功能 ===
+
+// 1. 信号灯点击展开
+function toggleSignal(el){
+  const detail=el.querySelector('.signal-detail');
+  if(detail)detail.classList.toggle('open');
+}
+
+// 2. 赛道方块tap展开
+function tapSector(el){
+  // 关闭其他
+  $$('.sector-box.active').forEach(b=>{if(b!==el)b.classList.remove('active')});
+  el.classList.toggle('active');
+}
+
+// 3. 卡片折叠/展开
+function toggleCard(id){
+  const card=document.getElementById(id);
+  if(!card)return;
+  card.classList.toggle('collapsed');
+  const toggle=card.querySelector('.card-toggle');
+  if(toggle)toggle.classList.toggle('open');
+}
+
+// 4. 数字计数动画
+function animateNumbers(){
+  // 评分动画
+  const scoreEl=document.getElementById('scoreNum');
+  if(scoreEl&&scoreEl.dataset.target){
+    const target=parseFloat(scoreEl.dataset.target);
+    animateValue(scoreEl,0,target,800,v=>v.toFixed(1));
+  }
+  // 估值动画
+  document.querySelectorAll('[data-target][id^="valPct"]').forEach(el=>{
+    const target=parseInt(el.dataset.target);
+    animateValue(el,0,target,600,v=>v+'%');
+  });
+}
+
+function animateValue(el,start,end,duration,fmt){
+  const startTime=performance.now();
+  function step(now){
+    const progress=Math.min((now-startTime)/duration,1);
+    const ease=1-Math.pow(1-progress,3); // easeOutCubic
+    const current=start+(end-start)*ease;
+    el.textContent=fmt(current);
+    if(progress<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 </script>
 </body>

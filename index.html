@@ -199,6 +199,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loading{text-align:center;padding:60px 0;color:var(--dim);font-size:14px}
 .error-card{background:var(--red20);border-color:#ef444440}
 [data-theme="light"] .cool-item,.reentry-item{background:var(--card2)}
+
+/* === 下拉刷新 === */
+.pull-indicator{text-align:center;padding:8px 0;font-size:12px;color:var(--dim);transition:all .3s;position:sticky;top:0;z-index:20;background:var(--bg)}
+.pull-indicator.pulling{opacity:1}.pull-indicator.ready{color:var(--green);font-weight:700}.pull-indicator.refreshing{animation:pulse 1s infinite}
+
+/* === 骨架屏 === */
+.skeleton{background:linear-gradient(90deg,var(--card2) 25%,var(--border) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius);margin-bottom:10px;height:80px}
+.skeleton-sm{height:50px}.skeleton-lg{height:120px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* === 模拟决策器 === */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:360px;width:90%;max-height:80vh;overflow-y:auto;transform:translateY(20px);transition:transform .25s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.modal-close{margin-left:auto;background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:0 4px}
+.sim-input-group{margin-bottom:12px}
+.sim-label{font-size:11px;color:var(--dim);margin-bottom:4px;font-weight:600}
+.sim-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card2);color:var(--text);font-size:14px;outline:none}
+.sim-input:focus{border-color:var(--blue)}
+.sim-result{background:var(--card2);border-radius:8px;padding:12px;margin-top:10px}
+.sim-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #ffffff06}
+.sim-row:last-child{border:none}
+.sim-row-label{color:var(--dim)}
+.sim-row-val{font-weight:700}
+.sim-btn{width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:opacity .2s}
+.sim-btn:active{opacity:.8}
+.sim-warning{font-size:10px;color:var(--red);margin-top:6px;text-align:center}
+
+/* === 日历订阅按钮 === */
+.cal-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:4px;transition:all .2s}
+.cal-btn:active{transform:scale(.95);background:var(--blue20);color:var(--blue)}
+.cal-btn:hover{border-color:var(--blue);color:var(--blue)}
 </style>
 </head>
 <body>
@@ -212,11 +246,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<div id="app"><div class="loading">⏳ 正在加载数据...</div></div>
+<div class="pull-indicator" id="pullInd" style="display:none">↓ 下拉刷新</div>
+<div id="app"><div class="skeleton"></div><div class="skeleton skeleton-sm"></div><div class="skeleton skeleton-lg"></div><div class="skeleton skeleton-sm"></div><div class="skeleton"></div></div>
+
+<!-- 模拟决策器弹窗 -->
+<div class="modal-overlay" id="simModal" onclick="if(event.target===this)closeSimulator()">
+<div class="modal">
+  <div class="modal-title">🧮 模拟决策器<span>双击信号灯打开</span><button class="modal-close" onclick="closeSimulator()">✕</button></div>
+  <div class="sim-input-group">
+    <div class="sim-label">投入金额（元）</div>
+    <input class="sim-input" id="simAmount" type="number" placeholder="如: 5000" min="100" max="99999">
+  </div>
+  <button class="sim-btn" onclick="runSimulation()">💡 计算建仓方案</button>
+  <div id="simResult"></div>
+</div>
+</div>
 
 <script>
 const DATA_URL='./data.json',STATE_URL='./state.json',HISTORY_URL='./history.json',NEWS_URL='./news.json';
 const REFRESH_MIN=5;
+// Cache for simulator
+let _lastC=null,_lastSD=null;
 
 function $(s,p){return(p||document).querySelector(s)}
 function $$(s,p){return[...(p||document).querySelectorAll(s)]}
@@ -354,7 +404,7 @@ function buildHTML(C,H,SD,newsData){
     signalCls==='yellow'?
     ('评分'+ef.toFixed(1)+'/10，'+passCount+'/'+totalRe+'项满足'):
     '评分'+ef.toFixed(1)+'≥6，'+passCount+'/'+totalRe+'项满足✅';
-  html+=`<div class="card signal-card signal-${signalCls} expandable" onclick="toggleSignal(this)">`;
+  html+=`<div class="card signal-card signal-${signalCls} expandable" onclick="toggleSignal(this)" ondblclick="openSimulator(event)">`;
   html+=`<div class="signal-light">${signalIcon}</div>`;
   html+=`<div class="signal-text anim-num">${signalText}</div>`;
   html+=`<div class="signal-reason">${signalReason}</div>`;
@@ -369,7 +419,7 @@ function buildHTML(C,H,SD,newsData){
     html+=`</div>`;
   }
   html+=`</div>`;
-  html+=`<div style="font-size:10px;color:var(--dim);margin-top:4px;opacity:.6">👆 点击查看详情</div></div>`;
+  html+=`<div style="font-size:10px;color:var(--dim);margin-top:4px;opacity:.6">👆点击详情 · 👆👆双击模拟决策</div></div>`;
 
   // === 2. 再入场条件进度条 ===
   if(SD&&SD.reentry.length>0){
@@ -501,7 +551,8 @@ function buildHTML(C,H,SD,newsData){
         const days=daysUntil(c.td);
         const cdText=formatCountdown(days);
         const cls=days===null?'cool-free':days<=0?'cool-free cool-thaw-today':days<=3?'cool-thawing':days<=7?'cool-thawing':'cool-frozen';
-        html+=`<div class="cool-item"><div class="cool-sector">${c.sec} · ${c.f}</div><div class="cool-name">${c.c}</div><div class="cool-countdown ${cls}">${cdText}</div><div class="cool-date">解冻 ${c.td} · ${c.tp}</div></div>`;
+        const thawDateStr=c.td||'';
+        html+=`<div class="cool-item"><div class="cool-sector">${c.sec} · ${c.f}</div><div class="cool-name">${c.c}</div><div class="cool-countdown ${cls}">${cdText}</div><div class="cool-date">解冻 ${c.td} · ${c.tp}</div><button class="cal-btn" onclick="downloadICS('${c.f}','${c.c}冷却期解冻','${thawDateStr}',event)">📅 加日历</button></div>`;
       }
       html+=`</div></div>`;
     }
@@ -622,6 +673,7 @@ async function main(){
     ]);
     let SD=null;
     if(stateRaw&&stateRaw.text)SD=parseState(stateRaw.text);
+    _lastC=C;_lastSD=SD;
     const html=buildHTML(C,H,SD,newsData);
     $('#app').innerHTML=html;
     // === 数字动画 ===
@@ -713,6 +765,160 @@ function animateValue(el,start,end,duration,fmt){
     if(progress<1)requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
+}
+
+// === #1 模拟决策器 ===
+function openSimulator(e){
+  e&&e.stopPropagation();
+  const modal=document.getElementById('simModal');
+  modal.classList.add('open');
+  // Pre-fill with available cash
+  const inp=document.getElementById('simAmount');
+  if(_lastSD&&_lastSD.avail&&!inp.value)inp.value=Math.min(_lastSD.avail,_lastSD.avail-1000);
+  document.getElementById('simResult').innerHTML='';
+}
+function closeSimulator(){
+  document.getElementById('simModal').classList.remove('open');
+}
+function runSimulation(){
+  const amount=parseInt(document.getElementById('simAmount').value)||0;
+  const resEl=document.getElementById('simResult');
+  if(!amount||amount<100){resEl.innerHTML='<div class="sim-warning">⚠️ 请输入至少100元</div>';return}
+  if(!_lastSD){resEl.innerHTML='<div class="sim-warning">⚠️ 数据未加载</div>';return}
+  
+  const total=_lastSD.total||_lastSD.cash||9881;
+  const avail=_lastSD.avail||8881;
+  const safety=_lastSD.safety||9000;
+  const reserved=1000; // 永不满仓
+  const maxInvest=avail-reserved;
+  
+  // Check valuation for dynamic stop-loss
+  let semiPct=92,cpoPct=96;
+  if(_lastSD.val){
+    const sv=_lastSD.val.find(v=>v.s.includes('半导'));if(sv)semiPct=parseInt(sv.p.replace(/[^0-9]/g,''))||92;
+    const cv=_lastSD.val.find(v=>v.s.includes('CPO'));if(cv)cpoPct=parseInt(cv.p.replace(/[^0-9]/g,''))||96;
+  }
+  const stopLoss=semiPct>90?-5:semiPct>=60?-7:-10;
+  const stopLossAbs=Math.round(amount*stopLoss/-100);
+  
+  // Build allocation: S1=60%, S2=30%, Cash=10%
+  const s1=Math.round(amount*0.6);
+  const s2=Math.round(amount*0.3);
+  const cashReserve=Math.round(amount*0.1);
+  
+  // Warnings
+  let warnings=[];
+  if(amount>maxInvest)warnings.push(`❌ 超出可动用资金(最大${maxInvest.toLocaleString()}元)`);
+  if(total-amount<safety)warnings.push(`❌ 投入后低于安全线${safety}元`);
+  if(semiPct>90)warnings.push('⛔ 半导体估值>'+semiPct+'%，铁律30禁止买入');
+  if(cpoPct>90)warnings.push('⛔ CPO估值>'+cpoPct+'%，铁律30禁止买入');
+  if(amount+reserved>avail)warnings.push('❌ 违反永不满仓(≥'+reserved+'元)');
+  
+  let html='<div class="sim-result">';
+  html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">📊 建仓方案</div>';
+  html+=`<div class="sim-row"><span class="sim-row-label">🔧 S1 半导体设备(60%)</span><span class="sim-row-val" style="color:var(--blue)">${s1.toLocaleString()}元</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">📡 S2 CPO/光通信(30%)</span><span class="sim-row-val" style="color:var(--purple)">${s2.toLocaleString()}元</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">💰 预留现金(10%)</span><span class="sim-row-val">${cashReserve.toLocaleString()}元</span></div>`;
+  html+='<div style="border-top:1px solid var(--border);margin:6px 0"></div>';
+  html+=`<div class="sim-row"><span class="sim-row-label">🛑 动态止损线</span><span class="sim-row-val" style="color:var(--red)">${stopLoss}% (亏${stopLossAbs}元止损)</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">🎯 止盈目标(5%)</span><span class="sim-row-val" style="color:var(--green)">+${Math.round(amount*0.05)}元卖半</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">🎯 止盈目标(8%)</span><span class="sim-row-val" style="color:var(--green)">+${Math.round(amount*0.08)}元清仓</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">💰 投入后现金</span><span class="sim-row-val">${Math.max(0,total-amount).toLocaleString()}元</span></div>`;
+  html+=`<div class="sim-row"><span class="sim-row-label">🛡️ 安全线距离</span><span class="sim-row-val" style="color:${total-amount>=safety?'var(--green)':'var(--red)'}">${total-amount>=safety?'安全✅':'危险❌'} (${Math.round((total-amount-safety)/safety*100)}%)</span></div>`;
+  if(warnings.length>0){
+    html+='<div style="margin-top:8px">';
+    for(const w of warnings)html+=`<div class="sim-warning" style="text-align:left">${w}</div>`;
+    html+='</div>';
+  }else{
+    html+='<div style="font-size:10px;color:var(--green);text-align:center;margin-top:6px">✅ 方案符合铁律，等待信号触发</div>';
+  }
+  html+='</div>';
+  resEl.innerHTML=html;
+}
+
+// === #2 下拉刷新 ===
+(function(){
+  let startY=0,pulling=false;
+  const app=document.getElementById('app');
+  const ind=document.getElementById('pullInd');
+  const THRESHOLD=60;
+  document.addEventListener('touchstart',e=>{if(window.scrollY<=0){startY=e.touches[0].clientY;pulling=true}},{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!pulling)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>0&&dy<THRESHOLD*2&&window.scrollY<=0){
+      ind.style.display='block';
+      ind.className='pull-indicator pulling';
+      ind.textContent=dy>=THRESHOLD?'↑ 释放刷新':'↓ 下拉刷新';
+      if(dy>=THRESHOLD)ind.classList.add('ready');
+    }
+  },{passive:true});
+  document.addEventListener('touchend',async()=>{
+    if(!pulling)return;
+    pulling=false;
+    if(ind.classList.contains('ready')){
+      ind.className='pull-indicator refreshing';
+      ind.textContent='🔄 刷新中...';
+      app.innerHTML='<div class="skeleton"></div><div class="skeleton skeleton-sm"></div><div class="skeleton skeleton-lg"></div><div class="skeleton skeleton-sm"></div><div class="skeleton"></div>';
+      await main();
+      ind.textContent='✅ 已刷新';
+      setTimeout(()=>{ind.style.display='none'},800);
+    }else{
+      ind.style.display='none';
+    }
+  },{passive:true});
+  // Desktop: click header to refresh
+  document.querySelector('.header h1')?.addEventListener('click',async()=>{
+    ind.style.display='block';
+    ind.className='pull-indicator refreshing';
+    ind.textContent='🔄 刷新中...';
+    app.innerHTML='<div class="skeleton"></div><div class="skeleton skeleton-sm"></div><div class="skeleton skeleton-lg"></div><div class="skeleton skeleton-sm"></div><div class="skeleton"></div>';
+    await main();
+    ind.textContent='✅ 已刷新';
+    setTimeout(()=>{ind.style.display='none'},800);
+  });
+})();
+
+// === #4 日历订阅 ===
+function downloadICS(title,desc,dateStr,e){
+  e&&e.stopPropagation();
+  if(!dateStr||dateStr==='—')return;
+  // Parse M/D to full date
+  const m=dateStr.match(/(\d+)\/(\d+)/);
+  if(!m)return;
+  const year=new Date().getFullYear();
+  const month=+m[1],day=+m[2];
+  // Event at 9:00 AM on thaw date
+  const dtStart=year+(month<10?'0':'')+month+(day<10?'0':'')+day+'T090000';
+  const dtEnd=year+(month<10?'0':'')+month+(day<10?'0':'')+day+'T100000';
+  const ics=[
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//QClaw//Invest Dashboard//CN',
+    'BEGIN:VEVENT',
+    'DTSTART:'+dtStart,
+    'DTEND:'+dtEnd,
+    'SUMMARY:'+title,
+    'DESCRIPTION:'+desc,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT1H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:'+title+' 即将解冻',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'TRIGGER:-P1D',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:'+title+' 明天解冻',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='QClaw_'+title.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_')+'.ics';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>

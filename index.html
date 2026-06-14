@@ -13,8 +13,8 @@
 :root{
   --bg:#0a0e17;--card:#111827;--card2:#151d2e;--border:#1e2a3a;
   --text:#e1e5ee;--dim:#6b7a90;--dimmer:#3d4a5c;
-  --green:#22c55e;--green20:#22c55e20;--yellow:#eab308;--yellow20:#eab30820;
-  --red:#ef4444;--red20:#ef444420;--blue:#3b82f6;--blue20:#3b82f620;
+  --green:#22c55e;--green20:#22c55e20;--green40:#22c55e66;--yellow:#eab308;--yellow20:#eab30820;--yellow40:#eab30866;
+  --red:#ef4444;--red20:#ef444420;--red40:#ef444466;--blue:#3b82f6;--blue20:#3b82f620;
   --purple:#8b5cf6;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
   --radius:10px;
 }
@@ -155,6 +155,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* === 9. 持仓历史 === */
 .nav-chart{width:100%;height:140px}
 
+/* === 净值图交互 tooltip === */
+.nav-chart-wrap{position:relative;cursor:crosshair}
+.nav-tooltip{position:absolute;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;pointer-events:none;z-index:30;opacity:0;transition:opacity .15s;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.nav-tooltip.show{opacity:1}
+.nav-tooltip .tt-date{font-weight:600;color:var(--text)}
+.nav-tooltip .tt-val{color:var(--blue);font-weight:700}
+.nav-tooltip .tt-chg{font-size:10px}
+.nav-baseline-btn{position:absolute;right:4px;bottom:18px;font-size:9px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;cursor:pointer;z-index:5}
+.nav-baseline-btn{pointer-events:auto}.nav-baseline-btn{pointer-events:auto;z-index:10}.nav-baseline-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* === 评分趋势箭头 === */
+.score-trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;margin-left:4px;font-weight:600}
+.score-trend.up{color:var(--green)}.score-trend.down{color:var(--red)}.score-trend.flat{color:var(--dim)}
+.score-trend-badge{font-size:9px;font-weight:700;padding:0 4px;border-radius:3px;margin-left:4px}
+.score-trend-badge.hot{background:var(--red20);color:var(--red);animation:blink-badge 1s infinite}
+
+/* === 赛道置顶关注 === */
+.sector-pin{position:absolute;top:1px;right:2px;font-size:9px;opacity:.3;cursor:pointer;transition:all .2s;background:none;border:none;padding:0;line-height:1;color:var(--text);z-index:2}
+.sector-pin:hover,.sector-pin.pinned{opacity:1}
+.sector-pin.pinned{color:var(--yellow)}
+.sector-box.pinned{border-color:var(--yellow)!important;background:linear-gradient(135deg,var(--yellow20) 0%,transparent 60%)!important}
+.sector-pinned-row{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 4px;margin-bottom:6px;border-bottom:1px dashed var(--border)}
+.sector-pinned-tag{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--yellow20);border:1px solid var(--yellow40);color:var(--yellow);font-weight:600;display:flex;align-items:center;gap:3px}
+.sector-pinned-tag .unpin{font-size:8px;cursor:pointer;opacity:.5;margin-left:2px}
+.sector-pinned-tag .unpin:hover{opacity:1}
+
 /* === 10. 深浅色切换（见上方CSS变量+JS）=== */
 
 /* === 11. PWA（manifest.json+SW）=== */
@@ -255,6 +281,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div class="pull-indicator" id="pullInd" style="display:none">↓ 下拉刷新</div>
+<div id="sectorCardContainer"></div>
 <div id="app"><div class="skeleton"></div><div class="skeleton skeleton-sm"></div><div class="skeleton skeleton-lg"></div><div class="skeleton skeleton-sm"></div><div class="skeleton"></div></div>
 
 <!-- 模拟决策器弹窗 -->
@@ -469,7 +496,7 @@ function buildHTML(C,H,SD,newsData){
   // === Score Card ===
   html+=`<div class="card"><div class="ct">🎯 主线健康度</div>
 <div class="score-center">
-<div class="score-num anim-num" style="color:${scColor(sc)}" data-target="${sc.toFixed(1)}" id="scoreNum">0.0</div>
+<div class="score-num anim-num" style="color:${scColor(sc)}" data-target="${sc.toFixed(1)}" id="scoreNum">0.0<span class="score-trend" id="scoreTrend"></span></div>
 <div class="score-of">/10</div>
 <div class="score-eff">有效评分 ${ef.toFixed(2)}（2天均值）</div>
 <div class="score-bar">`;
@@ -573,23 +600,32 @@ function buildHTML(C,H,SD,newsData){
     }
   }
 
-  // === 6. 赛道状态卡片 ===
+  // === 6. 赛道状态卡片（支持置顶关注） ===
+  // Rendered into #sectorCardContainer for light re-render on pin toggle
   if(SD&&SD.sectors){
-    // v3.6: frozen rules indicator
-  const frozenRules=['扩12主线切换❄️','扩15全局视野❄️','扩16主动型❄️'];
-  html+=`<div class="card"><div class="ct">🏭 赛道状态 (S1-S10) <span style="font-size:9px;color:var(--dim);font-weight:400">| 3条规则冻结中</span></div><div class="sector-grid">`;
+    const frozenRules=['扩12主线切换❄️','扩15全局视野❄️','扩16主动型❄️'];
+    const pinnedSectors=JSON.parse(localStorage.getItem('qclaw-pinned')||'[]');
+    let secHtml='<div class="card"><div class="ct">🏭 赛道状态 (S1-S10) <span style="font-size:9px;color:var(--dim);font-weight:400">| 3条规则冻结中</span></div>';
+    if(pinnedSectors.length>0){
+      secHtml+='<div class="sector-pinned-row">';
+      for(const pid of pinnedSectors){const ps=SD.sectors.find(s=>s.id===pid);if(ps)secHtml+=`<div class="sector-pinned-tag">${ps.emoji} ${ps.id}<span class="unpin" onclick="unpinSector('${pid}')">✕</span></div>`;}
+      secHtml+='</div>';
+    }
+    secHtml+='<div class="sector-grid">';
     for(const s of SD.sectors){
       const cls=s.status==='free'?'free':s.status==='frozen'?'frozen':s.status==='valblock'?'valblock':'nodata';
       const statusText=s.status==='free'?'✅可操作':s.status==='frozen'?'🔒冷却中':s.status==='valblock'?'⛔估值锁':'—';
-      html+=`<div class="sector-box ${cls}" onclick="tapSector(this)">`;
-      html+=`<div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div>`;
-      // tap展开详情
+      const isPinned=pinnedSectors.includes(s.id);
+      secHtml+=`<div class="sector-box ${cls} ${isPinned?'pinned':''}" onclick="tapSector(this)">`;
+      secHtml+=`<button class="sector-pin ${isPinned?'pinned':''}" onclick="event.stopPropagation();togglePinSector('${s.id}')" title="关注">📌</button>`;
+      secHtml+=`<div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div>`;
       const thaw=s.thawDate?`解冻: ${s.thawDate}`:'';
       const detail=`${statusText}${s.reason?' | '+s.reason:''}${thaw?' | '+thaw:''}`;
-      html+=`<div class="sector-detail">${detail}</div>`;
-      html+=`</div>`;
+      secHtml+=`<div class="sector-detail">${detail}</div></div>`;
     }
-    html+=`</div></div>`;
+    secHtml+='</div></div>';
+    // Will be placed into #sectorCardContainer after innerHTML set
+    html+=`<div id="sectorCardPlaceholder">${secHtml}</div>`;
   }
 
   // === 5. 现金火力条 ===
@@ -656,21 +692,28 @@ function buildHTML(C,H,SD,newsData){
     }
   }
 
-  // === 9. 持仓历史净值图 ===
+  // === 9. 持仓历史净值图（带交互 tooltip） ===
   if(SD&&SD.navHistory&&SD.navHistory.length>1){
     const W=320,H2=120,P=30,PB=20;
     const vals=SD.navHistory.map(n=>n.value);
+    const baseline=10000;
     const mn=Math.min(...vals)*0.9,mx=Math.max(...vals)*1.1;
     const xScale=i=>P+i*(W-2*P)/(vals.length-1);
     const yScale=v=>H2-PB-(v-mn)/(mx-mn)*(H2-P-PB);
     const pts=vals.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');
+    const navId='navChart_'+Date.now(); // unique ID per render
     html+=`<div class="card"><div class="ct">📉 账户净值走势</div>
-    <svg viewBox="0 0 ${W} ${H2}" class="nav-chart" preserveAspectRatio="xMidYMid meet">
+    <div class="nav-chart-wrap" id="${navId}">
+    <div class="nav-tooltip" id="${navId}_tt"></div>
+    <svg viewBox="0 0 ${W} ${H2}" class="nav-chart" preserveAspectRatio="xMidYMid meet" style="touch-action:none">
+    <rect x="${P}" y="${PB}" width="${W-2*P}" height="${H2-P-PB}" fill="transparent" class="nav-hitarea"/>
     <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>
     ${vals.map((v,i)=>`<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3" fill="var(--blue)"/>`).join('')}
     ${SD.navHistory.map((n,i)=>`<text x="${xScale(i)}" y="${H2-4}" fill="#6b7a90" font-size="7" text-anchor="middle">${n.date}</text>`).join('')}
     ${vals.length<=5?vals.map((v,i)=>`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`).join(''):vals.map((v,i)=>i===0||i===vals.length-1?`<text x="${xScale(i)}" y="${yScale(v)-6}" fill="var(--text)" font-size="7" text-anchor="middle">${v}</text>`:'').join('')}
-    </svg></div>`;
+    </svg>
+    <button class="nav-baseline-btn" onclick="toggleNavBaseline('${navId}')" id="${navId}_blBtn">📊 基准线</button>
+    </div></div>`;
   }
 
   // === 7. 今日快讯 ===
@@ -752,18 +795,26 @@ async function main(){
     ]);
     let SD=null;
     if(stateRaw&&stateRaw.text)SD=parseState(stateRaw.text);
-    _lastC=C;_lastSD=SD;
+    _lastC=C;_lastSD=SD;window._lastSD=SD;
     const html=buildHTML(C,H,SD,newsData);
     $('#app').innerHTML=html;
+    // Move sector card into its container for light re-render
+    const secPlaceholder=$('#sectorCardPlaceholder');
+    const secContainer=$('#sectorCardContainer');
+    if(secPlaceholder&&secContainer){secContainer.innerHTML=secPlaceholder.innerHTML;secPlaceholder.remove();}
     // === 数字动画 ===
     animateNumbers();
+    // === 评分趋势箭头 ===
+    if(C.score)updateScoreTrend(C.score,H);
+    // === 净值图 tooltip 初始化 ===
+    document.querySelectorAll('.nav-chart-wrap').forEach(w=>initNavTooltip(w.id));
     const ts=C.cache_timestamp||C.date||'';
     // Relative + absolute time
     const cacheTs=C.cache_timestamp?new Date(C.cache_timestamp):null;
     let relTime='';
     if(cacheTs){const ago=Math.round((Date.now()-cacheTs)/60000);relTime=ago<1?'刚刚':ago<60?ago+'分钟前':Math.round(ago/60)+'小时前';}
     // v3.6 version tag + dynamic stop-loss hint
-    const verTag='v3.6';
+    const verTag='v3.7+交互增强';
     let extraInfo='';
     if(SD&&SD.val&&SD.val.length>0){
       const semiVal=SD.val.find(v=>v.s.includes('半导'));
@@ -1012,6 +1063,210 @@ function downloadICS(title,desc,dateStr,e){
   a.href=url;a.download='QClaw_CoolDown_'+dateStr.replace(/\//g,'-')+'.ics';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// === 净值图交互 tooltip ===
+let _navBaseline=false;
+function initNavTooltip(navId){
+  const wrap=document.getElementById(navId);
+  if(!wrap)return;
+  const svg=wrap.querySelector('svg');
+  const tt=document.getElementById(navId+'_tt');
+  const hit=wrap.querySelector('.nav-hitarea');
+  if(!hit||!tt)return;
+
+  // Get data from buildHTML closure — store on window
+  const sd=window._lastSD;
+  if(!sd||!sd.navHistory||sd.navHistory.length<2)return;
+  const vals=sd.navHistory.map(n=>n.value);
+  const W=320,H2=120,P=30,PB=20;
+  const mn=Math.min(...vals)*0.9,mx=Math.max(...vals)*1.1;
+  const bl=10000;
+  const xScale=i=>P+i*(W-2*P)/(vals.length-1);
+  const yScale=v=>H2-PB-(v-mn)/(mx-mn)*(H2-P-PB);
+
+  function getClosest(clientX){
+    const rect=svg.getBoundingClientRect();
+    const relX=(clientX-rect.left)/rect.width*W;
+    let minDist=Infinity,idx=0;
+    for(let i=0;i<vals.length;i++){
+      const d=Math.abs(xScale(i)-relX);
+      if(d<minDist){minDist=d;idx=i;}
+    }
+    return idx;
+  }
+
+  function showTooltip(idx,clientX,clientY){
+    const rect=svg.getBoundingClientRect();
+    const n=sd.navHistory[idx];
+    const v=vals[idx];
+    const chg=v-bl;
+    const chgPct=((v/bl)-1)*100;
+    tt.innerHTML=`<div class="tt-date">${n.date}</div><div class="tt-val">${v.toLocaleString()}</div><div class="tt-chg" style="color:${chg>=0?'var(--green)':'var(--red)'}">${chg>=0?'+':''}${chg.toLocaleString()} (${chgPct>=0?'+':''}${chgPct.toFixed(1)}%)</div>`;
+    // Position tooltip
+    const cx=rect.left+xScale(idx)/W*rect.width;
+    const cy=rect.top+yScale(vals[idx])/H2*rect.height;
+    tt.style.left=Math.min(Math.max(cx-rect.left-60,0),rect.width-140)+'px';
+    tt.style.top=Math.max(cy-rect.top-50,0)+'px';
+    tt.classList.add('show');
+  }
+
+  function hideTooltip(){tt.classList.remove('show');}
+
+  // Mouse
+  svg.addEventListener('mousemove',e=>{
+    const idx=getClosest(e.clientX);
+    showTooltip(idx,e.clientX,e.clientY);
+  });
+  svg.addEventListener('mouseleave',hideTooltip);
+
+  // Touch
+  svg.addEventListener('touchstart',e=>{
+    const t=e.touches[0];
+    const idx=getClosest(t.clientX);
+    showTooltip(idx,t.clientX,t.clientY);
+  },{passive:true});
+  svg.addEventListener('touchmove',e=>{
+    const t=e.touches[0];
+    const idx=getClosest(t.clientX);
+    showTooltip(idx,t.clientX,t.clientY);
+  },{passive:true});
+  svg.addEventListener('touchend',()=>{
+    setTimeout(hideTooltip,1500);
+  },{passive:true});
+
+  // Baseline overlay
+  updateNavBaseline(navId,false);
+}
+
+function toggleNavBaseline(navId){
+  _navBaseline=!_navBaseline;
+  updateNavBaseline(navId,_navBaseline);
+  const btn=document.getElementById(navId+'_blBtn');
+  if(btn)btn.textContent=_navBaseline?'🔵 净值':'📊 基准线';
+}
+
+function updateNavBaseline(navId,show){
+  const wrap=document.getElementById(navId);
+  if(!wrap)return;
+  const svg=wrap.querySelector('svg');
+  let blLine=wrap.querySelector('.nav-bl-line');
+  let blText=wrap.querySelector('.nav-bl-text');
+  if(!show){
+    if(blLine)blLine.remove();
+    if(blText)blText.remove();
+    return;
+  }
+  if(!blLine){
+    const ns='http://www.w3.org/2000/svg';
+    blLine=document.createElementNS(ns,'line');
+    blLine.setAttribute('class','nav-bl-line');
+    blLine.setAttribute('x1','30');blLine.setAttribute('x2','290');
+    blLine.setAttribute('stroke','var(--yellow)');
+    blLine.setAttribute('stroke-dasharray','4 3');
+    blLine.setAttribute('stroke-width','1.5');
+    svg.appendChild(blLine);
+    blText=document.createElementNS(ns,'text');
+    blText.setAttribute('class','nav-bl-text');
+    blText.setAttribute('x','292');blText.setAttribute('font-size','7');
+    blText.setAttribute('fill','var(--yellow)');
+    blText.textContent='10000';
+    svg.appendChild(blText);
+  }
+  const sd=window._lastSD;
+  if(!sd||!sd.navHistory)return;
+  const vals=sd.navHistory.map(n=>n.value);
+  const mn=Math.min(...vals)*0.9,mx=Math.max(...vals)*1.1;
+  const yScale=v=>120-20-(v-mn)/(mx-mn)*(120-30-20);
+  const blY=yScale(10000);
+  blLine.setAttribute('y1',blY);blLine.setAttribute('y2',blY);
+  blText.setAttribute('y',blY+3);
+}
+
+// === 评分趋势箭头 ===
+function updateScoreTrend(currentScore,H){
+  const el=document.getElementById('scoreTrend');
+  if(!el)return;
+  // Use history.json to find previous score (not localStorage which gets overwritten on auto-refresh)
+  let prevScore=null;
+  if(H&&H.length>=2){
+    // Sort by date desc, find the most recent entry that is NOT today
+    const today=_lastC?.date||'';
+    const sorted=[...H].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+    const todayEntries=sorted.filter(h=>h.date===today);
+    const olderEntries=sorted.filter(h=>h.date!==today);
+    // Previous = last entry before today, or second-to-last today entry
+    if(olderEntries.length>0)prevScore=olderEntries[0].score;
+    else if(todayEntries.length>=2)prevScore=todayEntries[1].score;
+  }
+  if(prevScore===null){
+    el.innerHTML='<span class="score-trend flat">→ 首次</span>';
+    return;
+  }
+  const diff=currentScore-prevScore;
+  let arrow='',cls='flat',badge='';
+  if(Math.abs(diff)<0.1){
+    arrow='→';cls='flat';
+  }else if(diff>0){
+    arrow='↑';cls='up';
+    if(diff>=1.5)badge=' <span class="score-trend-badge hot">突涨!</span>';
+  }else{
+    arrow='↓';cls='down';
+    if(diff<=-1.5)badge=' <span class="score-trend-badge hot">突跌!</span>';
+  }
+  el.innerHTML=`<span class="score-trend ${cls}">${arrow} ${diff>=0?'+':''}${diff.toFixed(1)}</span>${badge}`;
+  // Trigger notification for big changes
+  if(Math.abs(diff)>=1.5&&Notification.permission==='granted'){
+    new Notification('QClaw 评分突变',{
+      body:`评分从 ${prevScore.toFixed(1)} → ${currentScore.toFixed(1)}${diff>0?' 📈':' 📉'}`,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"><text y="32" font-size="32">📊</text></svg>'
+    });
+  }
+}
+
+// === 赛道置顶关注 ===
+function togglePinSector(id){
+  let pinned=JSON.parse(localStorage.getItem('qclaw-pinned')||'[]');
+  const idx=pinned.indexOf(id);
+  if(idx>=0)pinned.splice(idx,1);
+  else pinned.push(id);
+  localStorage.setItem('qclaw-pinned',JSON.stringify(pinned));
+  // Light re-render: only update the sector card
+  reRenderSectorCard();
+}
+function unpinSector(id){
+  let pinned=JSON.parse(localStorage.getItem('qclaw-pinned')||'[]');
+  const idx=pinned.indexOf(id);
+  if(idx>=0)pinned.splice(idx,1);
+  localStorage.setItem('qclaw-pinned',JSON.stringify(pinned));
+  reRenderSectorCard();
+}
+function reRenderSectorCard(){
+  const SD=_lastSD;
+  if(!SD||!SD.sectors)return;
+  const pinnedSectors=JSON.parse(localStorage.getItem('qclaw-pinned')||'[]');
+  const container=document.getElementById('sectorCardContainer');
+  if(!container)return;
+  let html='<div class="card"><div class="ct">🏭 赛道状态 (S1-S10) <span style="font-size:9px;color:var(--dim);font-weight:400">| 3条规则冻结中</span></div>';
+  if(pinnedSectors.length>0){
+    html+='<div class="sector-pinned-row">';
+    for(const pid of pinnedSectors){const ps=SD.sectors.find(s=>s.id===pid);if(ps)html+=`<div class="sector-pinned-tag">${ps.emoji} ${ps.id}<span class="unpin" onclick="unpinSector('${pid}')">✕</span></div>`;}
+    html+='</div>';
+  }
+  html+='<div class="sector-grid">';
+  for(const s of SD.sectors){
+    const cls=s.status==='free'?'free':s.status==='frozen'?'frozen':s.status==='valblock'?'valblock':'nodata';
+    const statusText=s.status==='free'?'✅可操作':s.status==='frozen'?'🔒冷却中':s.status==='valblock'?'⛔估值锁':'—';
+    const isPinned=pinnedSectors.includes(s.id);
+    html+=`<div class="sector-box ${cls} ${isPinned?'pinned':''}" onclick="tapSector(this)">`;
+    html+=`<button class="sector-pin ${isPinned?'pinned':''}" onclick="event.stopPropagation();togglePinSector('${s.id}')" title="关注">📌</button>`;
+    html+=`<div class="sector-id">${s.id}</div><div class="sector-name">${s.emoji} ${s.name.replace('/','/')}</div><div class="sector-tip">${statusText}${s.reason?' · '+s.reason:''}${s.thawDate?' → '+s.thawDate:''}</div>`;
+    const thaw=s.thawDate?`解冻: ${s.thawDate}`:'';
+    const detail=`${statusText}${s.reason?' | '+s.reason:''}${thaw?' | '+thaw:''}`;
+    html+=`<div class="sector-detail">${detail}</div></div>`;
+  }
+  html+='</div></div>';
+  container.innerHTML=html;
 }
 </script>
 </body>

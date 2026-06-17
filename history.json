@@ -111,5 +111,25 @@
     "semi_valuation": null,
     "cpo_valuation": null,
     "effective_score": 5.0
+  },
+  {
+    "date": "2026-06-17",
+    "score": 5.0,
+    "dimensions": {
+      "资金流向": 1.5,
+      "龙头位置": 1,
+      "政策催化": 0,
+      "板块趋势": 1,
+      "成交量": 1.5
+    },
+    "semi_valuation": null,
+    "cpo_valuation": null,
+    "effective_score": 4.5,
+    "semi_chg": 4.62,
+    "cpo_chg": -0.77,
+    "semi_volume": 1232.72,
+    "cpo_volume": 88.18,
+    "semi_inflow": 27.57,
+    "cpo_inflow": -0.74
   }
 ]

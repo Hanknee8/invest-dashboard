@@ -131,5 +131,45 @@
     "cpo_volume": 88.18,
     "semi_inflow": 27.57,
     "cpo_inflow": -0.74
+  },
+  {
+    "date": "2026-06-18",
+    "score": 5.0,
+    "dimensions": {
+      "资金流向": 1.0,
+      "龙头位置": 1.5,
+      "政策催化": 0,
+      "板块趋势": 1,
+      "成交量": 1.5
+    },
+    "semi_valuation": null,
+    "cpo_valuation": null,
+    "effective_score": 5.0,
+    "semi_chg": 2.9,
+    "cpo_chg": 1.91,
+    "semi_volume": 1127.67,
+    "cpo_volume": 346.08,
+    "semi_inflow": 10.44,
+    "cpo_inflow": 16.43
+  },
+  {
+    "date": "2026-06-18",
+    "score": 5.0,
+    "dimensions": {
+      "资金流向": 1.0,
+      "龙头位置": 1.5,
+      "政策催化": 0,
+      "板块趋势": 1,
+      "成交量": 1.5
+    },
+    "semi_valuation": null,
+    "cpo_valuation": null,
+    "effective_score": 5.0,
+    "semi_chg": 2.39,
+    "cpo_chg": 1.79,
+    "semi_volume": 1143.69,
+    "cpo_volume": 349.4,
+    "semi_inflow": 10.6,
+    "cpo_inflow": 16.62
   }
 ]

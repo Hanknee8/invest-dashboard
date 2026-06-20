@@ -1,139 +1,6 @@
 [
   {
-    "date": "2026-06-10",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": 92,
-    "cpo_valuation": 98,
-    "effective_score": 5.0
-  },
-  {
-    "date": "2026-06-11",
-    "score": 5.5,
-    "dimensions": {
-      "资金流向": 2,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": 92,
-    "cpo_valuation": 98,
-    "effective_score": 5.5
-  },
-  {
-    "date": "2026-06-12",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 0.5,
-      "政策催化": 2,
-      "板块趋势": 0,
-      "成交量": 1.5
-    },
-    "semi_valuation": 92,
-    "cpo_valuation": 96,
-    "effective_score": 5.25
-  },
-  {
-    "date": "2026-06-13",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 0.5,
-      "政策催化": 2,
-      "板块趋势": 0,
-      "成交量": 1.5
-    },
-    "semi_valuation": 92,
-    "cpo_valuation": 96,
-    "effective_score": 5.25
-  },
-  {
-    "date": "2026-06-14",
-    "score": 2.5,
-    "dimensions": {
-      "资金流向": 1,
-      "龙头位置": 1.0,
-      "政策催化": 0,
-      "板块趋势": 0,
-      "成交量": 0.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 3.75
-  },
-  {
-    "date": "2026-06-15",
-    "score": 6.5,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 1.5,
-      "政策催化": 1,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": 93,
-    "cpo_valuation": 97,
-    "effective_score": 5.0,
-    "note": "政策催化+1(华为HDC+英伟达CPO商用交付+产业事件); 估值因今日大涨上调1%/1%"
-  },
-  {
-    "date": "2026-06-15",
-    "score": 6.0,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 2,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 6.25
-  },
-  {
-    "date": "2026-06-16",
-    "score": 4.0,
-    "dimensions": {
-      "资金流向": 0.5,
-      "龙头位置": 1.5,
-      "政策催化": 0,
-      "板块趋势": 0.5,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.0
-  },
-  {
-    "date": "2026-06-17",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1.5,
-      "龙头位置": 1,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 4.5,
-    "semi_chg": 4.62,
-    "cpo_chg": -0.77,
-    "semi_volume": 1232.72,
-    "cpo_volume": 88.18,
-    "semi_inflow": 27.57,
-    "cpo_inflow": -0.74
-  },
-  {
-    "date": "2026-06-18",
+    "date": "2026-06-20",
     "score": 5.0,
     "dimensions": {
       "资金流向": 1.0,
@@ -145,31 +12,11 @@
     "semi_valuation": null,
     "cpo_valuation": null,
     "effective_score": 5.0,
-    "semi_chg": 2.9,
-    "cpo_chg": 1.91,
-    "semi_volume": 1127.67,
-    "cpo_volume": 346.08,
-    "semi_inflow": 10.44,
-    "cpo_inflow": 16.43
-  },
-  {
-    "date": "2026-06-18",
-    "score": 5.0,
-    "dimensions": {
-      "资金流向": 1.0,
-      "龙头位置": 1.5,
-      "政策催化": 0,
-      "板块趋势": 1,
-      "成交量": 1.5
-    },
-    "semi_valuation": null,
-    "cpo_valuation": null,
-    "effective_score": 5.0,
-    "semi_chg": 2.39,
-    "cpo_chg": 1.79,
-    "semi_volume": 1143.69,
-    "cpo_volume": 349.4,
-    "semi_inflow": 10.6,
-    "cpo_inflow": 16.62
+    "semi_chg": 2.48,
+    "cpo_chg": 1.72,
+    "semi_volume": 1270.04,
+    "cpo_volume": 391.03,
+    "semi_inflow": 12.25,
+    "cpo_inflow": 16.85
   }
 ]
